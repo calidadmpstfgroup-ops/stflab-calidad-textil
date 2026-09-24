@@ -1,0 +1,1360 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { 
+  MuestraTextil, 
+  AreaType, 
+  DictamenType, 
+  FiltrosDashboard, 
+  ResumenKPIs, 
+  RankingCausaNoConformidad, 
+  CalidadProveedor,
+  SolicitudTelasCompleta,
+  ItemMuestraTela,
+  EvaluacionCompletaLaboratorioTela,
+  DecisionCompraTela,
+  SolicitudAccesoriosCompleta,
+  ItemMuestraAccesorio,
+  FichaTecnicaHistorica,
+  FichaTecnicaHistoricaVersionada,
+  VersionFichaTecnica,
+  UserRole,
+  AnalistaLaboratorio,
+  SelloResponsable,
+  RegistroEdicionAudit,
+  EvaluacionForrosCosturas
+} from '../types';
+import { 
+  MOCK_MUESTRAS, 
+  MOCK_SOLICITUDES_ACCESORIOS, 
+  MOCK_SOLICITUDES_TELAS, 
+  MOCK_FICHAS_TECNICAS_HISTORICAS,
+  MOCK_EVALUACIONES_FORROS_COSTURAS
+} from '../data/mockData';
+import { 
+  calcularKPIs, 
+  calcularRankingNoConformidades, 
+  calcularCalidadProveedores, 
+  filtrarMuestras 
+} from '../utils/calculations';
+import { soundEffects, TipoSonido } from '../utils/soundEffects';
+import { NotificacionItem } from '../components/common/NotificationToastContainer';
+import { 
+  firestoreGuardarSolicitudTelas,
+  firestoreActualizarItemTela,
+  firestoreGuardarSolicitudAccesorios,
+  firestoreActualizarItemAccesorio,
+  registrarLogAuditoria,
+  COLECCIONES
+} from '../services/firestoreService';
+
+interface QualityContextType {
+  muestras: MuestraTextil[];
+  muestrasFiltradas: MuestraTextil[];
+  areaActual: AreaType;
+  setAreaActual: (area: AreaType) => void;
+  filtros: FiltrosDashboard;
+  setFiltros: React.Dispatch<React.SetStateAction<FiltrosDashboard>>;
+  resetearFiltros: () => void;
+  muestraSeleccionada: MuestraTextil | null;
+  setMuestraSeleccionada: (muestra: MuestraTextil | null) => void;
+  
+  // Modales
+  modalFichaAbierto: boolean;
+  setModalFichaAbierto: (abierto: boolean) => void;
+  modalNuevaMuestraAbierto: boolean;
+  setModalNuevaMuestraAbierto: (abierto: boolean) => void;
+  modalImportarAbierto: boolean;
+  setModalImportarAbierto: (abierto: boolean) => void;
+  modalAlertasLeadTimeAbierto: boolean;
+  setModalAlertasLeadTimeAbierto: (abierto: boolean) => void;
+  modalSelectorAreaAbierto: boolean;
+  setModalSelectorAreaAbierto: (abierto: boolean) => void;
+
+  // Acciones CRUD y Dictamen
+  actualizarDictamenArea: (
+    muestraId: string, 
+    area: 'laboratorio' | 'compras' | 'patronaje' | 'corte', 
+    dictamen: DictamenType, 
+    observaciones?: string, 
+    responsable?: string,
+    detallesEspecificos?: Record<string, any>
+  ) => void;
+  agregarMuestra: (nueva: Omit<MuestraTextil, 'id'>) => void;
+  actualizarMuestra: (muestra: MuestraTextil) => void;
+  eliminarMuestra: (id: string) => void;
+  importarMuestrasMasivas: (nuevas: MuestraTextil[]) => void;
+  restablecerDatosIniciales: () => void;
+  limpiarTodosLosDatos: () => void;
+
+  // Métricas computadas
+  kpis: ResumenKPIs;
+  rankingCausas: RankingCausaNoConformidad[];
+  calidadProveedores: CalidadProveedor[];
+  listaProveedoresUnicos: string[];
+  listaMarcasUnicas: string[];
+
+  // 🧵 Gestión de Solicitudes de Telas (1 o varias telas en el mismo paquete)
+  solicitudesTelas: SolicitudTelasCompleta[];
+  agregarSolicitudTelas: (solicitud: Omit<SolicitudTelasCompleta, 'id'>) => void;
+  enviarSolicitudTelasALaboratorio: (solicitudId: string) => void;
+  actualizarItemTelaLab: (solicitudId: string, itemId: string, datosActualizados: Partial<ItemMuestraTela>) => void;
+  responderSolicitudTelas: (
+    solicitudId: string,
+    itemId: string,
+    datosRespuesta: {
+      resultadoLab: string;
+      dictamen: DictamenType;
+      fechaIngreso?: string;
+      fechaEntrega?: string;
+      fechaRespuestaLab?: string;
+      responsableLab?: string;
+      observacionesLabRespuesta?: string;
+      evaluacionTecnica?: EvaluacionCompletaLaboratorioTela;
+      fichaTecnicaUtilizada?: any;
+    }
+  ) => void;
+  registrarDecisionCompraTela: (
+    solicitudId: string,
+    itemId: string,
+    decisionData: DecisionCompraTela
+  ) => void;
+
+  // 🔩 Gestión de Solicitudes de Accesorios (con múltiples muestras independientes)
+  solicitudesAccesorios: SolicitudAccesoriosCompleta[];
+  agregarSolicitudAccesorios: (solicitud: Omit<SolicitudAccesoriosCompleta, 'id'>) => void;
+  enviarSolicitudAccesoriosALaboratorio: (solicitudId: string) => void;
+  actualizarItemAccesorioLab: (solicitudId: string, itemId: string, datosActualizados: Partial<ItemMuestraAccesorio>) => void;
+  actualizarDictamenSolicitudAccesorios: (solicitudId: string, dictamen: DictamenType) => void;
+  responderSolicitudAccesorios: (solicitudId: string, datosRespuesta: { observacionesLab?: string; responsable?: string; muestrasEvaluadas?: ItemMuestraAccesorio[] }) => void;
+
+  // 📄 Repositorio Histórico de Fichas Técnicas del Proveedor (Independiente de Compras)
+  fichasTecnicasHistorial: FichaTecnicaHistoricaVersionada[];
+  consultarFichaTecnicaHistorica: (referencia: string, proveedor?: string, refProveedor?: string) => { ficha: FichaTecnicaHistoricaVersionada; version: VersionFichaTecnica } | undefined;
+  guardarFichaTecnica: (ficha: FichaTecnicaHistoricaVersionada) => void;
+  guardarFichaTecnicaProveedor: (ficha: FichaTecnicaHistoricaVersionada, nuevaVersion?: VersionFichaTecnica) => void;
+  importarFichasTecnicasExcel: (fichas: FichaTecnicaHistoricaVersionada[]) => void;
+
+  // 🧑‍🔬 Módulo de Usuarios de Laboratorio & Trazabilidad (4 Responsables)
+  analistas: AnalistaLaboratorio[];
+  analistaActivo: AnalistaLaboratorio;
+  cambiarAnalistaConPin: (analistaId: string, pinIngresado: string) => { exito: boolean; mensaje: string };
+  obtenerSelloResponsable: () => SelloResponsable;
+  crearAnalista: (datos: Omit<AnalistaLaboratorio, 'id'>) => void;
+  actualizarAnalista: (analista: AnalistaLaboratorio) => void;
+  eliminarAnalista: (id: string) => void;
+
+  // 🔔 Sistema de Alertas Animadas & Sonidos en Tiempo Real
+  notificacionesActivas: NotificacionItem[];
+  dispararNotificacion: (notif: Omit<NotificacionItem, 'id'>) => void;
+  eliminarNotificacion: (id: string) => void;
+
+  // 🪡 Módulo de Evaluaciones de Forros y Costuras (Pipin vs Shipping)
+  evaluacionesForrosCosturas: EvaluacionForrosCosturas[];
+  agregarEvaluacionForrosCosturas: (nueva: Omit<EvaluacionForrosCosturas, 'id' | 'codigoReporte' | 'createdAt' | 'updatedAt'>) => EvaluacionForrosCosturas;
+  actualizarEvaluacionForrosCosturas: (id: string, datos: Partial<EvaluacionForrosCosturas>) => void;
+  eliminarEvaluacionForrosCosturas: (id: string) => void;
+  enviarCorreoReporteForrosCosturas: (id: string, destinatario: string, asunto: string, cuerpo: string) => void;
+}
+
+export const ANALISTAS_PREDETERMINADOS: AnalistaLaboratorio[] = [
+  {
+    id: 'analista-1',
+    nombreCompleto: 'María Fernanda López',
+    cargoEspecialidad: 'Analista de Calidad & Ensayos Textil',
+    correoUsuario: 'maria.lopez@stfgroup.com',
+    pinAcceso: '1234',
+    activo: true
+  },
+  {
+    id: 'analista-2',
+    nombreCompleto: 'Juan Pérez',
+    cargoEspecialidad: 'Técnico de Ensayo & Fisicoquímica',
+    correoUsuario: 'juan.perez@stfgroup.com',
+    pinAcceso: '5678',
+    activo: true
+  },
+  {
+    id: 'analista-3',
+    nombreCompleto: 'Carlos Gómez',
+    cargoEspecialidad: 'Especialista en Solideces y Color',
+    correoUsuario: 'carlos.gomez@stfgroup.com',
+    pinAcceso: '4321',
+    activo: true
+  },
+  {
+    id: 'analista-4',
+    nombreCompleto: 'Ana Martínez',
+    cargoEspecialidad: 'Analista de Calidad & Técnico de Ensayo',
+    correoUsuario: 'ana.martinez@stfgroup.com',
+    pinAcceso: '8888',
+    activo: true
+  }
+];
+
+const FILTROS_INICIALES: FiltrosDashboard = {
+  busqueda: '',
+  rangoFecha: 'TODOS',
+  fechaInicio: '',
+  fechaFin: '',
+  proveedor: 'TODOS',
+  marca: 'TODAS',
+  dictamen: 'TODOS',
+  estadoTrazabilidad: 'TODOS',
+  soloAlertasLeadTime: false,
+};
+
+const QualityContext = createContext<QualityContextType | undefined>(undefined);
+
+const LOCAL_STORAGE_KEY = 'stflab_muestras_prod_zero_v2';
+const LOCAL_STORAGE_ACC_KEY = 'stflab_solicitudes_acc_zero_v2';
+const LOCAL_STORAGE_TELAS_KEY = 'stflab_solicitudes_telas_zero_v2';
+const LOCAL_STORAGE_FICHAS_KEY = 'stflab_fichas_prod_clean_v1';
+
+export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { usuario, obtenerFirmaSesion } = useAuth();
+  const [analistas, setAnalistas] = useState<AnalistaLaboratorio[]>(() => {
+    try {
+      const stored = localStorage.getItem('stflab_analistas_list_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de analistas:', e);
+    }
+    return ANALISTAS_PREDETERMINADOS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('stflab_analistas_list_v2', JSON.stringify(analistas));
+    } catch (e) {
+      console.error('Error guardando analistas:', e);
+    }
+  }, [analistas]);
+
+  const [analistaActivo, setAnalistaActivo] = useState<AnalistaLaboratorio>(() => {
+    try {
+      const savedId = localStorage.getItem('stf_analista_activo_id');
+      const found = (analistas || ANALISTAS_PREDETERMINADOS).find(a => a.id === savedId);
+      if (found) return found;
+    } catch {}
+    return ANALISTAS_PREDETERMINADOS[0];
+  });
+
+  // Sincronizar automáticamente analistaActivo con el usuario ingresado en AuthContext
+  useEffect(() => {
+    if (usuario) {
+      const nombre = usuario.displayName || usuario.nombreUsuario || 'Analista Laboratorio';
+      const cargo = usuario.rolEspecifico || (usuario.role === 'ADMIN' ? 'Administrador STFLab' : 'Analista de Laboratorio');
+      
+      setAnalistaActivo(prev => {
+        if (prev.nombreCompleto === nombre) return prev;
+        const matchInList = analistas.find(a => 
+          a.id === usuario.uid || 
+          a.nombreCompleto.toLowerCase() === nombre.toLowerCase() ||
+          a.correoUsuario.toLowerCase() === (usuario.email || '').toLowerCase()
+        );
+        if (matchInList) {
+          return matchInList;
+        }
+        return {
+          id: usuario.uid || 'usr-active',
+          nombreCompleto: nombre,
+          cargoEspecialidad: cargo,
+          correoUsuario: usuario.email || `${usuario.nombreUsuario}@stfgroup.com`,
+          pinAcceso: '1234',
+          activo: true
+        };
+      });
+    }
+  }, [usuario, analistas]);
+  const [muestras, setMuestras] = useState<MuestraTextil[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de muestras:', e);
+    }
+    return [];
+  });
+
+  // Solicitudes de Compras - Telas
+  const [solicitudesTelas, setSolicitudesTelas] = useState<SolicitudTelasCompleta[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_TELAS_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de telas:', e);
+    }
+    return [];
+  });
+
+  // Solicitudes de Compras - Accesorios (Conectadas directamente a Laboratorio)
+  const [solicitudesAccesorios, setSolicitudesAccesorios] = useState<SolicitudAccesoriosCompleta[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ACC_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de accesorios:', e);
+    }
+    return [];
+  });
+
+  // Repositorio Histórico de Fichas Técnicas del Fabricante (con Versionamiento)
+  const [fichasTecnicasHistorial, setFichasTecnicasHistorial] = useState<FichaTecnicaHistoricaVersionada[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_FICHAS_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.warn('Error leyendo localStorage de fichas:', e);
+    }
+    return MOCK_FICHAS_TECNICAS_HISTORICAS;
+  });
+
+  const [areaActual, setAreaActual] = useState<AreaType>('dashboard');
+  const [filtros, setFiltros] = useState<FiltrosDashboard>(FILTROS_INICIALES);
+  const [muestraSeleccionada, setMuestraSeleccionada] = useState<MuestraTextil | null>(null);
+
+  // Estados de modales
+  const [modalFichaAbierto, setModalFichaAbierto] = useState(false);
+  const [modalNuevaMuestraAbierto, setModalNuevaMuestraAbierto] = useState(false);
+  const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
+  const [modalAlertasLeadTimeAbierto, setModalAlertasLeadTimeAbierto] = useState(false);
+  const [modalSelectorAreaAbierto, setModalSelectorAreaAbierto] = useState(false);
+
+  // 🔔 Estado y Gestor de Notificaciones Animadas & Sonidos
+  const [notificacionesActivas, setNotificacionesActivas] = useState<NotificacionItem[]>([]);
+
+  const dispararNotificacion = (notif: Omit<NotificacionItem, 'id'>) => {
+    const id = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const nueva: NotificacionItem = { ...notif, id, tiempo: 'Ahora' };
+
+    // Reproducir sonido con Web Audio API
+    soundEffects.reproducir(notif.tipo);
+
+    setNotificacionesActivas((prev) => [nueva, ...prev.slice(0, 4)]);
+
+    // Auto-cierre suave después de 7 segundos
+    setTimeout(() => {
+      setNotificacionesActivas((prev) => prev.filter((n) => n.id !== id));
+    }, 7000);
+  };
+
+  const eliminarNotificacion = (id: string) => {
+    setNotificacionesActivas((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  // Persistencia de respaldo en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(muestras));
+    } catch (e) {
+      console.error('Error sincronizando muestras:', e);
+    }
+  }, [muestras]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_TELAS_KEY, JSON.stringify(solicitudesTelas));
+    } catch (e) {
+      console.error('Error sincronizando solicitudes telas:', e);
+    }
+  }, [solicitudesTelas]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_ACC_KEY, JSON.stringify(solicitudesAccesorios));
+    } catch (e) {
+      console.error('Error sincronizando solicitudes accesorios:', e);
+    }
+  }, [solicitudesAccesorios]);
+
+  // Consultar Ficha Técnica Histórica (Prioridad: Proveedor + Referencia Proveedor / Nombre Comercial)
+  const consultarFichaTecnicaHistorica = (
+    referencia?: string,
+    proveedor?: string,
+    refProveedor?: string
+  ): { ficha: FichaTecnicaHistoricaVersionada; version: VersionFichaTecnica } | undefined => {
+    if (!referencia && !refProveedor) return undefined;
+    const refClean = (referencia || '').trim().toLowerCase();
+    const provClean = (proveedor || '').trim().toLowerCase();
+    const refProvClean = (refProveedor || '').trim().toLowerCase();
+
+    const fichaEncontrada = (fichasTecnicasHistorial || []).find((ft) => {
+      if (!ft) return false;
+      const ftProv = (ft.proveedor || '').toLowerCase();
+      // 1. Coincidencia primaria: Proveedor + Referencia Proveedor
+      if (refProvClean && ft.referenciaProveedor) {
+        const ftRefProv = ft.referenciaProveedor.toLowerCase();
+        const matchRefProv = ftRefProv === refProvClean ||
+                             ftRefProv.includes(refProvClean) ||
+                             refProvClean.includes(ftRefProv);
+        if (matchRefProv) {
+          if (!provClean || ftProv.includes(provClean) || provClean.includes(ftProv)) {
+            return true;
+          }
+        }
+      }
+
+      // 2. Coincidencia secundaria: Nombre comercial / Referencia + Proveedor
+      const ftRef = (ft.referencia || '').toLowerCase();
+      const matchRefNombre = ftRef.includes(refClean) || (refClean && refClean.includes(ftRef));
+      if (matchRefNombre) {
+        if (!provClean || ftProv.includes(provClean) || provClean.includes(ftProv)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    if (!fichaEncontrada) return undefined;
+    const versionActiva = fichaEncontrada.historialVersiones.find((v: VersionFichaTecnica) => v.activo) || 
+      fichaEncontrada.historialVersiones[fichaEncontrada.historialVersiones.length - 1];
+
+    return { ficha: fichaEncontrada, version: versionActiva };
+  };
+
+  const guardarFichaTecnica = (fichaActualizada: FichaTecnicaHistoricaVersionada) => {
+    setFichasTecnicasHistorial((prev) => {
+      const existe = prev.some(f => f.id === fichaActualizada.id || (f.proveedor.toLowerCase() === fichaActualizada.proveedor.toLowerCase() && f.referenciaProveedor.toLowerCase() === fichaActualizada.referenciaProveedor.toLowerCase()));
+      if (existe) {
+        return prev.map(f => (f.id === fichaActualizada.id || (f.proveedor.toLowerCase() === fichaActualizada.proveedor.toLowerCase() && f.referenciaProveedor.toLowerCase() === fichaActualizada.referenciaProveedor.toLowerCase())) ? fichaActualizada : f);
+      }
+      return [fichaActualizada, ...prev];
+    });
+  };
+
+  const guardarFichaTecnicaProveedor = (
+    ficha: FichaTecnicaHistoricaVersionada, 
+    nuevaVersion?: VersionFichaTecnica
+  ) => {
+    setFichasTecnicasHistorial((prev) => {
+      const idx = prev.findIndex(f => 
+        f.id === ficha.id || 
+        (f.proveedor.trim().toLowerCase() === ficha.proveedor.trim().toLowerCase() && 
+         f.referenciaProveedor.trim().toLowerCase() === ficha.referenciaProveedor.trim().toLowerCase())
+      );
+
+      if (idx >= 0) {
+        const fichaExistente = prev[idx];
+        const versionNumero = fichaExistente.versionActual + 1;
+        const versionObj: VersionFichaTecnica = nuevaVersion ? {
+          ...nuevaVersion,
+          version: versionNumero
+        } : {
+          ...ficha.historialVersiones[ficha.historialVersiones.length - 1],
+          version: versionNumero
+        };
+
+        const fichaActualizada: FichaTecnicaHistoricaVersionada = {
+          ...fichaExistente,
+          ...ficha,
+          versionActual: versionNumero,
+          estadoRevision: 'PENDIENTE_REVISION',
+          updatedAt: new Date().toISOString().split('T')[0],
+          updatedBy: versionObj.creadoPor || 'Proveedor',
+          historialVersiones: [...fichaExistente.historialVersiones, versionObj]
+        };
+
+        const nuevoHistorial = [...prev];
+        nuevoHistorial[idx] = fichaActualizada;
+        return nuevoHistorial;
+      }
+
+      return [{ ...ficha, estadoRevision: 'PENDIENTE_REVISION' }, ...prev];
+    });
+
+    // 🔔 Disparar notificación interna a Laboratorio
+    dispararNotificacion({
+      tipo: 'solicitud',
+      titulo: '📄 Nueva Ficha Técnica del Fabricante',
+      mensaje: `El proveedor ${ficha.proveedor} ha enviado la Ficha Técnica para ${ficha.referenciaProveedor} (${ficha.referencia}). Registrada en el Repositorio Histórico [PENDIENTE DE REVISIÓN].`,
+      areaDestino: 'laboratorio',
+      accionLabel: 'Ver Ficha en Historial'
+    });
+  };
+
+  const importarFichasTecnicasExcel = (fichasNuevas: FichaTecnicaHistoricaVersionada[]) => {
+    setFichasTecnicasHistorial((prev) => [...fichasNuevas, ...prev]);
+  };
+
+  // Filtrado de muestras
+  const muestrasFiltradas = filtrarMuestras(muestras, filtros);
+
+  // KPIs y Estadísticas dinámicas
+  const kpis = calcularKPIs(muestrasFiltradas);
+  const rankingCausas = calcularRankingNoConformidades(muestrasFiltradas);
+  const calidadProveedores = calcularCalidadProveedores(muestrasFiltradas);
+
+  const listaProveedoresUnicos = Array.from(new Set(muestras.map((m) => m.proveedor).filter(Boolean)));
+  const listaMarcasUnicas = Array.from(new Set(muestras.map((m) => m.marca).filter(Boolean)));
+
+  const resetearFiltros = () => {
+    setFiltros(FILTROS_INICIALES);
+  };
+
+  // =========================================================================
+  // --- 🔄 ACCIONES CRUD MUESTRAS & DICTÁMENES                             ---
+  // =========================================================================
+  const actualizarDictamenArea = (
+    muestraId: string,
+    area: 'laboratorio' | 'compras' | 'patronaje' | 'corte',
+    dictamen: DictamenType,
+    observaciones?: string,
+    responsable?: string,
+    detallesEspecificos?: Record<string, any>
+  ) => {
+    const fechaActual = new Date().toISOString().split('T')[0];
+
+    setMuestras((prev) =>
+      prev.map((m) => {
+        if (m.id !== muestraId) return m;
+
+        const nuevaTrazabilidad = {
+          ...m.trazabilidad,
+          [area]: {
+            estado: 'COMPLETO' as const,
+            dictamen,
+            fecha: fechaActual,
+            responsable: responsable || m.trazabilidad[area]?.responsable || 'Usuario Responsable',
+            observaciones: observaciones || m.trazabilidad[area]?.observaciones,
+          },
+        };
+
+        const dictamenes = Object.values(nuevaTrazabilidad).map((t) => t.dictamen);
+        let nuevoDictamenFinal: DictamenType = 'APROBADO';
+        if (dictamenes.includes('RECHAZADO')) {
+          nuevoDictamenFinal = 'RECHAZADO';
+        } else if (dictamenes.includes('HALLAZGO')) {
+          nuevoDictamenFinal = 'HALLAZGO';
+        } else if (dictamenes.includes('EN_PROCESO') || dictamenes.includes('PENDIENTE')) {
+          nuevoDictamenFinal = 'EN_PROCESO';
+        }
+
+        const nuevoMuestra: MuestraTextil = {
+          ...m,
+          dictamenFinal: nuevoDictamenFinal,
+          trazabilidad: nuevaTrazabilidad,
+          fechaFinalizacion: nuevoDictamenFinal === 'APROBADO' || nuevoDictamenFinal === 'RECHAZADO' ? fechaActual : undefined
+        };
+
+        if (muestraSeleccionada?.id === muestraId) {
+          setMuestraSeleccionada(nuevoMuestra);
+        }
+
+        return nuevoMuestra;
+      })
+    );
+
+    // Registro de auditoría
+    registrarLogAuditoria(
+      COLECCIONES.MUESTRAS_LABORATORIO,
+      muestraId,
+      'APROBAR',
+      responsable || 'Usuario',
+      area.toUpperCase() as UserRole,
+      `Dictamen de ${area} actualizado a ${dictamen}.`
+    );
+  };
+
+  const agregarMuestra = (nueva: Omit<MuestraTextil, 'id'>) => {
+    const id = `mt-${Date.now()}`;
+    const muestraCompleta: MuestraTextil = {
+      ...nueva,
+      id,
+    };
+    setMuestras((prev) => [muestraCompleta, ...prev]);
+  };
+
+  const actualizarMuestra = (muestraActualizada: MuestraTextil) => {
+    setMuestras((prev) => prev.map((m) => (m.id === muestraActualizada.id ? muestraActualizada : m)));
+    if (muestraSeleccionada?.id === muestraActualizada.id) {
+      setMuestraSeleccionada(muestraActualizada);
+    }
+  };
+
+  const eliminarMuestra = (id: string) => {
+    setMuestras((prev) => prev.filter((m) => m.id !== id));
+    if (muestraSeleccionada?.id === id) {
+      setMuestraSeleccionada(null);
+      setModalFichaAbierto(false);
+    }
+  };
+
+  const importarMuestrasMasivas = (nuevas: MuestraTextil[]) => {
+    setMuestras((prev) => [...nuevas, ...prev]);
+  };
+
+  const limpiarTodosLosDatos = () => {
+    setMuestras([]);
+    setSolicitudesTelas([]);
+    setSolicitudesAccesorios([]);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_TELAS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_ACC_KEY);
+    resetearFiltros();
+  };
+
+  const restablecerDatosIniciales = () => {
+    limpiarTodosLosDatos();
+  };
+
+  // =========================================================================
+  // --- 🧵 MÉTODOS SOLICITUDES TELAS                                      ---
+  // =========================================================================
+  const agregarSolicitudTelas = (nueva: Omit<SolicitudTelasCompleta, 'id'>) => {
+    const firma = obtenerFirmaSesion();
+
+    // 🚫 Rechazar si alguna tela no cuenta con Ficha Técnica del Proveedor
+    const telasSinFT = (nueva.telas || []).filter(t => {
+      const tieneFT = 
+        (t.fichaProveedor && (t.fichaProveedor.completadaPorProveedor || Boolean(t.fichaProveedor.tokenAcceso) || Boolean(t.fichaProveedor.composicionDeclarada))) ||
+        Boolean(t.fichaTecnica) ||
+        Boolean(t.archivoFichaTecnica) ||
+        consultarFichaTecnicaHistorica(t.referencia, nueva.proveedor || t.proveedor) !== undefined;
+      return !tieneFT;
+    });
+
+    if (telasSinFT.length > 0) {
+      const listaRef = telasSinFT.map(t => t.referencia).join(', ');
+      dispararNotificacion({
+        tipo: 'alerta',
+        titulo: '❌ Solicitud Rechazada - Falta Ficha Técnica',
+        mensaje: `La tela "${listaRef}" NO cuenta con la Ficha Técnica del Proveedor. Se requiere cargar la ficha técnica antes de enviar a Laboratorio.`,
+        areaDestino: 'compras',
+        accionLabel: 'Ver Fichas'
+      });
+      return;
+    }
+
+    const solicitud: SolicitudTelasCompleta = {
+      ...nueva,
+      id: `sol-tel-${Date.now()}`,
+      creadoPorFirma: firma
+    };
+    setSolicitudesTelas((prev) => [solicitud, ...prev]);
+    firestoreGuardarSolicitudTelas(solicitud, firma.nombreCompleto, firma.rol as UserRole);
+
+    registrarLogAuditoria(
+      COLECCIONES.SOLICITUDES_TELAS,
+      solicitud.id,
+      'CREAR',
+      firma.nombreCompleto,
+      firma.rol as UserRole,
+      `Solicitud de telas ${solicitud.numeroSolicitud} creada por ${firma.nombreCompleto} (${firma.area}).`,
+      { firma, previousValue: null, newValue: solicitud.numeroSolicitud }
+    );
+
+    // 🔔 Alerta Animada con Sonido: Nueva Solicitud de Telas
+    dispararNotificacion({
+      tipo: 'solicitud',
+      titulo: '🚀 Nueva Solicitud de Telas Generada',
+      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.telas?.length || 1} telas) enviada a Laboratorio por ${firma.nombreCompleto}.`,
+      areaDestino: 'laboratorio',
+      accionLabel: 'Ver en Laboratorio'
+    });
+  };
+
+  const enviarSolicitudTelasALaboratorio = (solicitudId: string) => {
+    const firma = obtenerFirmaSesion();
+
+    const solActual = solicitudesTelas.find(s => s.id === solicitudId);
+    if (solActual) {
+      const telasSinFT = solActual.telas.filter(t => {
+        const tieneFT = 
+          (t.fichaProveedor && (t.fichaProveedor.completadaPorProveedor || Boolean(t.fichaProveedor.tokenAcceso) || Boolean(t.fichaProveedor.composicionDeclarada))) ||
+          Boolean(t.fichaTecnica) ||
+          Boolean(t.archivoFichaTecnica) ||
+          consultarFichaTecnicaHistorica(t.referencia, solActual.proveedor || t.proveedor) !== undefined;
+        return !tieneFT;
+      });
+
+      if (telasSinFT.length > 0) {
+        const listaRef = telasSinFT.map(t => t.referencia).join(', ');
+        dispararNotificacion({
+          tipo: 'alerta',
+          titulo: '❌ Rechazado - Falta Ficha Técnica del Proveedor',
+          mensaje: `No se pudo enviar la solicitud ${solActual.numeroSolicitud} a laboratorio: La tela "${listaRef}" no tiene Ficha Técnica del Proveedor.`,
+          areaDestino: 'compras',
+          accionLabel: 'Ver Fichas'
+        });
+        alert(`❌ RECHAZADO: La tela "${listaRef}" no cuenta con la Ficha Técnica del Proveedor. Debe cargarse previamente antes de transferir a laboratorio.`);
+        return;
+      }
+    }
+
+    setSolicitudesTelas((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const actualizada: SolicitudTelasCompleta = { 
+          ...sol, 
+          estadoFlujo: 'ENVIADA',
+          recibidoPorFirma: firma
+        };
+        
+        registrarLogAuditoria(
+          COLECCIONES.SOLICITUDES_TELAS,
+          solicitudId,
+          'RECIBIR',
+          firma.nombreCompleto,
+          firma.rol as UserRole,
+          `Solicitud ${sol.numeroSolicitud} transferida a Laboratorio por ${firma.nombreCompleto}.`,
+          { firma, previousValue: sol.estadoFlujo, newValue: 'ENVIADA' }
+        );
+
+        // 🔔 Alerta Animada con Sonido al Enviar
+        dispararNotificacion({
+          tipo: 'solicitud',
+          titulo: '🚀 Solicitud de Telas Enviada a Laboratorio',
+          mensaje: `Solicitud ${sol.numeroSolicitud} transferida a Laboratorio por ${firma.nombreCompleto}.`,
+          areaDestino: 'laboratorio',
+          accionLabel: 'Ver en Laboratorio'
+        });
+
+        return actualizada;
+      })
+    );
+  };
+
+  const actualizarItemTelaLab = (
+    solicitudId: string,
+    itemId: string,
+    datosActualizados: Partial<ItemMuestraTela>
+  ) => {
+    const firma = obtenerFirmaSesion();
+    setSolicitudesTelas((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const telasActualizadas = sol.telas.map((t) => (t.id === itemId ? { ...t, ...datosActualizados, dictamenPorFirma: firma } : t));
+        const dictamenes = telasActualizadas.map((t) => t.dictamen);
+        let nuevoDictamenGlobal: DictamenType = 'APROBADO';
+        if (dictamenes.includes('RECHAZADO')) nuevoDictamenGlobal = 'RECHAZADO';
+        else if (dictamenes.includes('HALLAZGO')) nuevoDictamenGlobal = 'HALLAZGO';
+        else if (dictamenes.includes('EN_PROCESO') || dictamenes.includes('PENDIENTE')) nuevoDictamenGlobal = 'EN_PROCESO';
+
+        const solicitudModificada: SolicitudTelasCompleta = {
+          ...sol,
+          telas: telasActualizadas,
+          dictamenGlobal: nuevoDictamenGlobal,
+          estadoFlujo: (nuevoDictamenGlobal === 'EN_PROCESO' ? 'EN_PROCESO' : 'FINALIZADA'),
+        };
+
+        firestoreActualizarItemTela(solicitudId, itemId, datosActualizados, firma.nombreCompleto, firma.rol as UserRole);
+
+        registrarLogAuditoria(
+          COLECCIONES.SOLICITUDES_TELAS,
+          solicitudId,
+          'REGISTRAR_ENSAYO',
+          firma.nombreCompleto,
+          firma.rol as UserRole,
+          `Ensayos de tela actualizados por ${firma.nombreCompleto} (${firma.rolEspecifico || firma.rol}).`,
+          { firma, previousValue: 'EN_PROCESO', newValue: datosActualizados.dictamen || 'EN_PROCESO', itemId }
+        );
+
+        // 🔔 ALERTAS AUTOMÁTICAS CON SONIDO CUANDO LLEGAN A PATRONAJE Y CORTE
+        if (datosActualizados.dictamen === 'APROBADO' || datosActualizados.dictamen === 'HALLAZGO') {
+          const telaEvaluada = sol.telas.find(t => t.id === itemId);
+          const refTela = telaEvaluada?.referencia || datosActualizados.referencia || 'Tela Evaluada';
+
+          // 1. Alerta a Patronaje (Moldería & Compensación)
+          dispararNotificacion({
+            tipo: 'patronaje',
+            titulo: '📐 ¡Nueva Alerta para Patronaje!',
+            mensaje: `${refTela} evaluada en Laboratorio. Encogimientos registrados listos para cálculo de compensación de moldes base.`,
+            areaDestino: 'patronaje',
+            accionLabel: 'Ir a Patronaje'
+          });
+
+          // 2. Alerta a Corte (Control de Reposo & Matiz)
+          setTimeout(() => {
+            dispararNotificacion({
+              tipo: 'corte',
+              titulo: '✂️ ¡Nueva Alerta para Corte & Tendido!',
+              mensaje: `${refTela} liberada por Laboratorio. Iniciar control de reposo textil (24-48h) y verificación de matiz entre rollos.`,
+              areaDestino: 'corte',
+              accionLabel: 'Ir a Corte'
+            });
+          }, 700);
+        }
+
+        return solicitudModificada;
+      })
+    );
+  };
+
+  const responderSolicitudTelas = (
+    solicitudId: string,
+    itemId: string,
+    datosRespuesta: {
+      resultadoLab: string;
+      dictamen: DictamenType;
+      fechaIngreso?: string;
+      fechaEntrega?: string;
+      fechaRespuestaLab?: string;
+      responsableLab?: string;
+      observacionesLabRespuesta?: string;
+      evaluacionTecnica?: EvaluacionCompletaLaboratorioTela;
+      fichaTecnicaUtilizada?: any;
+    }
+  ) => {
+    const firma = obtenerFirmaSesion();
+    setSolicitudesTelas((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const hoy = new Date().toISOString().split('T')[0];
+
+        const telaPrincipal = sol.telas.find((t) => t.id === itemId);
+        const dictamenAnterior = telaPrincipal?.dictamen || 'PENDIENTE';
+        const esMuestraCompartida = sol.esMuestraCompartida || 
+          telaPrincipal?.esMuestraCompartida || 
+          /aplica\s*1\s*sola\s*muestra|misma\s*tela/i.test(telaPrincipal?.observacion || sol.observacionesGenerales || '');
+
+        const telasActualizadas = sol.telas.map((t) => {
+          if (t.id === itemId || (esMuestraCompartida && sol.telas.length > 1)) {
+            return {
+              ...t,
+              resultadoLab: datosRespuesta.resultadoLab,
+              dictamen: datosRespuesta.dictamen,
+              fechaIngreso: datosRespuesta.fechaIngreso || t.fechaIngreso || hoy,
+              fechaEntrega: datosRespuesta.fechaEntrega || t.fechaEntrega || hoy,
+              fechaRevisionLab: hoy,
+              fechaRespuestaLab: datosRespuesta.fechaRespuestaLab || hoy,
+              responsableLab: firma.nombreCompleto || datosRespuesta.responsableLab || 'Laboratorista Textil',
+              observacionesLabRespuesta: datosRespuesta.observacionesLabRespuesta,
+              evaluacionTecnica: datosRespuesta.evaluacionTecnica,
+              dictamenPorFirma: firma,
+              fichaTecnicaUtilizada: datosRespuesta.fichaTecnicaUtilizada || t.fichaTecnicaUtilizada
+            };
+          }
+          return t;
+        });
+
+        const dictamenes = telasActualizadas.map((t) => t.dictamen);
+        let nuevoDictamenGlobal: DictamenType = 'APROBADO';
+        if (dictamenes.includes('RECHAZADO')) nuevoDictamenGlobal = 'RECHAZADO';
+        else if (dictamenes.includes('HALLAZGO')) nuevoDictamenGlobal = 'HALLAZGO';
+        else if (dictamenes.includes('EN_PROCESO') || dictamenes.includes('PENDIENTE')) nuevoDictamenGlobal = 'EN_PROCESO';
+
+        const solicitudModificada: SolicitudTelasCompleta = {
+          ...sol,
+          telas: telasActualizadas,
+          dictamenGlobal: nuevoDictamenGlobal,
+          estadoFlujo: 'FINALIZADA',
+          dictamenPorFirma: firma
+        };
+
+        registrarLogAuditoria(
+          COLECCIONES.SOLICITUDES_TELAS,
+          solicitudId,
+          'DICTAMEN_TECNICO',
+          firma.nombreCompleto,
+          firma.rol as UserRole,
+          `Dictamen de Laboratorio emitido por ${firma.nombreCompleto} (${firma.rolEspecifico || firma.rol}): ${datosRespuesta.dictamen}.`,
+          { firma, previousValue: dictamenAnterior, newValue: datosRespuesta.dictamen, itemId }
+        );
+
+        // 🔔 Disparar notificación a Compras
+        dispararNotificacion({
+          tipo: 'solicitud',
+          titulo: `🔬 Dictamen de Laboratorio: ${sol.numeroSolicitud}`,
+          mensaje: `Laboratorio (${firma.nombreCompleto}) emitió dictamen [${datosRespuesta.dictamen}] para "${sol.telas.find(t => t.id === itemId)?.referencia || 'tela'}". Compras debe decidir si procede con la compra.`,
+          areaDestino: 'compras',
+          accionLabel: 'Decidir Compra en Compras'
+        });
+
+        return solicitudModificada;
+      })
+    );
+  };
+
+  const registrarDecisionCompraTela = (
+    solicitudId: string,
+    itemId: string,
+    decisionData: DecisionCompraTela
+  ) => {
+    const firma = obtenerFirmaSesion();
+    const decisionConFirma: DecisionCompraTela = {
+      ...decisionData,
+      responsable: firma.nombreCompleto,
+      decisionPorFirma: firma
+    };
+
+    setSolicitudesTelas((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const telaAfectada = sol.telas.find((t) => t.id === itemId);
+        const decisionAnterior = telaAfectada?.decisionCompra?.decision || 'PENDIENTE';
+        const refTela = telaAfectada?.referencia || 'Tela Evaluada';
+
+        const telasActualizadas = sol.telas.map((t) => {
+          if (t.id === itemId) {
+            return {
+              ...t,
+              decisionCompra: decisionConFirma,
+              decisionPorFirma: firma
+            };
+          }
+          return t;
+        });
+
+        registrarLogAuditoria(
+          COLECCIONES.SOLICITUDES_TELAS,
+          solicitudId,
+          'DECISION_FINAL',
+          firma.nombreCompleto,
+          firma.rol as UserRole,
+          `Decisión comercial de Compras por ${firma.nombreCompleto}: ${decisionData.decision}. Motivo: ${decisionData.motivoDecision || 'N/A'}.`,
+          { firma, previousValue: decisionAnterior, newValue: decisionData.decision, itemId }
+        );
+
+        // 🔔 SI SE COMPRA: Se emiten alertas funcionales a Patronaje y Corte
+        if (decisionData.decision === 'COMPRAR') {
+          if (decisionData.alertaPatronaje?.aplica !== false) {
+            dispararNotificacion({
+              tipo: 'patronaje',
+              titulo: `📐 Alerta para Patronaje: ${refTela}`,
+              mensaje: decisionData.alertaPatronaje?.descripcion || `Compra aprobada por ${firma.nombreCompleto}. Aplicar compensación de moldería según encogimientos de laboratorio.`,
+              areaDestino: 'patronaje',
+              accionLabel: 'Ir a Patronaje'
+            });
+          }
+
+          if (decisionData.alertaCorte?.aplica !== false) {
+            setTimeout(() => {
+              dispararNotificacion({
+                tipo: 'corte',
+                titulo: `✂️ Alerta para Corte: ${refTela}`,
+                mensaje: decisionData.alertaCorte?.descripcion || `Compra aprobada por ${firma.nombreCompleto}. Programar reposo textil de 24-48h y verificar sentido de tendido en mesa.`,
+                areaDestino: 'corte',
+                accionLabel: 'Ir a Corte'
+              });
+            }, 600);
+          }
+        } 
+        // 🚫 SI NO SE COMPRA: El proceso llega hasta ahí y no avanza
+        else if (decisionData.decision === 'NO_COMPRAR') {
+          dispararNotificacion({
+            tipo: 'alerta',
+            titulo: `🚫 Compra No Aprobada: ${refTela}`,
+            mensaje: `Compras (${firma.nombreCompleto}) decidió NO comprar la tela "${refTela}". Motivo: ${decisionData.motivoDecision || 'No conforme con requerimientos'}. El proceso finaliza aquí y no continúa.`,
+            areaDestino: 'compras',
+            accionLabel: 'Ver en Compras'
+          });
+        }
+
+        return {
+          ...sol,
+          telas: telasActualizadas
+        };
+      })
+    );
+  };
+
+  // =========================================================================
+  // --- 🔩 MÉTODOS SOLICITUDES ACCESORIOS                                 ---
+  // =========================================================================
+  const agregarSolicitudAccesorios = (nueva: Omit<SolicitudAccesoriosCompleta, 'id'>) => {
+    const firma = obtenerFirmaSesion();
+    const solicitud: SolicitudAccesoriosCompleta = {
+      ...nueva,
+      id: `sol-acc-${Date.now()}`,
+      creadoPorFirma: firma
+    };
+    setSolicitudesAccesorios((prev) => [solicitud, ...prev]);
+    firestoreGuardarSolicitudAccesorios(solicitud, firma.nombreCompleto, firma.rol as UserRole);
+
+    registrarLogAuditoria(
+      COLECCIONES.SOLICITUDES_ACCESORIOS,
+      solicitud.id,
+      'CREAR',
+      firma.nombreCompleto,
+      firma.rol as UserRole,
+      `Solicitud de accesorios ${solicitud.numeroSolicitud} creada por ${firma.nombreCompleto}.`,
+      { firma, previousValue: null, newValue: solicitud.numeroSolicitud }
+    );
+
+    // 🔔 Alerta Animada con Sonido: Nueva Solicitud de Accesorios
+    dispararNotificacion({
+      tipo: 'solicitud',
+      titulo: '🔩 Nueva Solicitud de Accesorios Generada',
+      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.muestras?.length || 1} insumos) enviada a Laboratorio por ${firma.nombreCompleto}.`,
+      areaDestino: 'laboratorio',
+      accionLabel: 'Ver en Laboratorio'
+    });
+  };
+
+  const enviarSolicitudAccesoriosALaboratorio = (solicitudId: string) => {
+    const firma = obtenerFirmaSesion();
+    setSolicitudesAccesorios((prev) =>
+      prev.map((sol) => (sol.id === solicitudId ? { ...sol, estadoFlujo: 'ENVIADA', recibidoPorFirma: firma } : sol))
+    );
+  };
+
+  const actualizarItemAccesorioLab = (
+    solicitudId: string,
+    itemId: string,
+    datosActualizados: Partial<ItemMuestraAccesorio>
+  ) => {
+    const firma = obtenerFirmaSesion();
+    setSolicitudesAccesorios((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+
+        const muestrasActualizadas = sol.muestras.map((item) => {
+          if (item.id !== itemId) return item;
+          return {
+            ...item,
+            ...datosActualizados,
+            dictamenPorFirma: firma
+          };
+        });
+
+        const dictamenes = muestrasActualizadas.map((m) => m.dictamen);
+        let nuevoEstadoGlobal: DictamenType = 'APROBADO';
+        if (dictamenes.includes('RECHAZADO')) nuevoEstadoGlobal = 'RECHAZADO';
+        else if (dictamenes.includes('HALLAZGO')) nuevoEstadoGlobal = 'HALLAZGO';
+        else if (dictamenes.includes('EN_PROCESO') || dictamenes.includes('PENDIENTE')) nuevoEstadoGlobal = 'EN_PROCESO';
+
+        const solicitudModificada: SolicitudAccesoriosCompleta = {
+          ...sol,
+          muestras: muestrasActualizadas,
+          estadoGlobal: nuevoEstadoGlobal,
+          estadoFlujo: (nuevoEstadoGlobal === 'EN_PROCESO' ? 'EN_PROCESO' : 'FINALIZADA'),
+        };
+
+        firestoreActualizarItemAccesorio(solicitudId, itemId, datosActualizados, firma.nombreCompleto, firma.rol as UserRole);
+        return solicitudModificada;
+      })
+    );
+  };
+
+  const actualizarDictamenSolicitudAccesorios = (solicitudId: string, dictamen: DictamenType) => {
+    setSolicitudesAccesorios((prev) =>
+      prev.map((sol) => (sol.id === solicitudId ? { ...sol, estadoGlobal: dictamen } : sol))
+    );
+  };
+
+  const responderSolicitudAccesorios = (
+    solicitudId: string,
+    datosRespuesta: {
+      observacionesLab?: string;
+      responsable?: string;
+      muestrasEvaluadas?: ItemMuestraAccesorio[];
+    }
+  ) => {
+    const firma = obtenerFirmaSesion();
+    setSolicitudesAccesorios((prev) =>
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const fechaActual = new Date().toISOString().split('T')[0];
+        const muestrasFinales = datosRespuesta.muestrasEvaluadas || sol.muestras;
+
+        const dictamenes = muestrasFinales.map((m) => m.dictamen);
+        let nuevoEstadoGlobal: DictamenType = 'APROBADO';
+        if (dictamenes.includes('RECHAZADO')) nuevoEstadoGlobal = 'RECHAZADO';
+        else if (dictamenes.includes('HALLAZGO')) nuevoEstadoGlobal = 'HALLAZGO';
+        else if (dictamenes.includes('EN_PROCESO') || dictamenes.includes('PENDIENTE')) nuevoEstadoGlobal = 'EN_PROCESO';
+
+        const solicitudRespondida: SolicitudAccesoriosCompleta = {
+          ...sol,
+          muestras: muestrasFinales,
+          estadoGlobal: nuevoEstadoGlobal,
+          estadoFlujo: 'FINALIZADA',
+          fechaRespuestaLab: fechaActual,
+          responsableRespuestaLab: firma.nombreCompleto || datosRespuesta.responsable || 'Laboratorio Accesorios',
+          observacionesLabRespuesta: datosRespuesta.observacionesLab || 'Respuesta técnica de laboratorio emitida exitosamente a Compras.',
+          dictamenPorFirma: firma
+        };
+
+        firestoreGuardarSolicitudAccesorios(solicitudRespondida, firma.nombreCompleto, firma.rol as UserRole);
+
+        registrarLogAuditoria(
+          COLECCIONES.SOLICITUDES_ACCESORIOS,
+          solicitudId,
+          'DICTAMEN_TECNICO',
+          firma.nombreCompleto,
+          firma.rol as UserRole,
+          `Respuesta de laboratorio de accesorios emitida por ${firma.nombreCompleto}: ${nuevoEstadoGlobal}.`,
+          { firma, previousValue: sol.estadoGlobal, newValue: nuevoEstadoGlobal }
+        );
+
+        // 🔔 Alerta Animada con Sonido a Compras
+        dispararNotificacion({
+          tipo: 'solicitud',
+          titulo: '🟢 Respuesta de Accesorios Enviada a Compras',
+          mensaje: `Solicitud ${sol.numeroSolicitud} evaluada por ${firma.nombreCompleto}. Resultados disponibles para Compras.`,
+          areaDestino: 'compras',
+          accionLabel: 'Ver en Compras'
+        });
+
+        return solicitudRespondida;
+      })
+    );
+  };
+
+  // =========================================================================
+  // --- 🧑‍🔬 MÓDULO DE USUARIOS DE LABORATORIO (4 ANALISTAS & PIN RÁPIDO)    ---
+  // =========================================================================
+  const cambiarAnalistaConPin = (analistaId: string, pinIngresado: string) => {
+    const target = analistas.find(a => a.id === analistaId);
+    if (!target) {
+      return { exito: false, mensaje: 'El analista seleccionado no existe.' };
+    }
+    if (target.pinAcceso !== pinIngresado.trim()) {
+      soundEffects.reproducir('alerta');
+      return { exito: false, mensaje: 'PIN de 4 dígitos incorrecto. Verifica e intenta de nuevo.' };
+    }
+    setAnalistaActivo(target);
+    try {
+      localStorage.setItem('stf_analista_activo_id', target.id);
+    } catch {}
+    soundEffects.reproducir('aprobado');
+    dispararNotificacion({
+      tipo: 'solicitud',
+      titulo: `👤 Operador Activo: ${target.nombreCompleto}`,
+      mensaje: `Especialidad: ${target.cargoEspecialidad}`,
+      areaDestino: 'laboratorio'
+    });
+    return { exito: true, mensaje: `Analista cambiado exitosamente a ${target.nombreCompleto}` };
+  };
+
+  const obtenerSelloResponsable = (): SelloResponsable => {
+    const now = new Date();
+    const fechaFormat = now.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const horaFormat = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return {
+      nombreAnalista: analistaActivo.nombreCompleto,
+      cargo: analistaActivo.cargoEspecialidad,
+      fechaHoraEmision: `${fechaFormat} - ${horaFormat}`,
+      pinValidado: true
+    };
+  };
+
+  const crearAnalista = (datos: Omit<AnalistaLaboratorio, 'id'>) => {
+    const nuevo: AnalistaLaboratorio = {
+      ...datos,
+      id: `analista-${Date.now()}`,
+      activo: true
+    };
+    setAnalistas(prev => [...prev, nuevo]);
+    dispararNotificacion({
+      titulo: 'Perfil Creado',
+      mensaje: `Se ha registrado el perfil de ${nuevo.nombreCompleto} (${nuevo.cargoEspecialidad}).`,
+      tipo: 'aprobado'
+    });
+  };
+
+  const actualizarAnalista = (analistaActualizado: AnalistaLaboratorio) => {
+    setAnalistas(prev => prev.map(a => a.id === analistaActualizado.id ? analistaActualizado : a));
+    if (analistaActivo.id === analistaActualizado.id) {
+      setAnalistaActivo(analistaActualizado);
+    }
+    dispararNotificacion({
+      titulo: 'Perfil Actualizado',
+      mensaje: `Credenciales de ${analistaActualizado.nombreCompleto} actualizadas.`,
+      tipo: 'aprobado'
+    });
+  };
+
+  const eliminarAnalista = (id: string) => {
+    if (analistas.length <= 1) {
+      dispararNotificacion({
+        titulo: 'Acción No Permitida',
+        mensaje: 'Debe haber al menos 1 perfil activo en el sistema.',
+        tipo: 'alerta'
+      });
+      return;
+    }
+    setAnalistas(prev => prev.filter(a => a.id !== id));
+    if (analistaActivo.id === id) {
+      const siguiente = analistas.find(a => a.id !== id) || ANALISTAS_PREDETERMINADOS[0];
+      setAnalistaActivo(siguiente);
+    }
+    dispararNotificacion({
+      titulo: 'Perfil Removido',
+      mensaje: 'El perfil de usuario fue eliminado correctamente.',
+      tipo: 'alerta'
+    });
+  };
+
+  // --- MÓDULO FORROS Y COSTURAS (PIPIN VS SHIPPING) ---
+  const [evaluacionesForrosCosturas, setEvaluacionesForrosCosturas] = useState<EvaluacionForrosCosturas[]>(() => {
+    try {
+      const stored = localStorage.getItem('stflab_forros_costuras_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de forros y costuras:', e);
+    }
+    return MOCK_EVALUACIONES_FORROS_COSTURAS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('stflab_forros_costuras_v1', JSON.stringify(evaluacionesForrosCosturas));
+    } catch (e) {
+      console.error('Error guardando forros y costuras:', e);
+    }
+  }, [evaluacionesForrosCosturas]);
+
+  const agregarEvaluacionForrosCosturas = (datos: Omit<EvaluacionForrosCosturas, 'id' | 'codigoReporte' | 'createdAt' | 'updatedAt'>): EvaluacionForrosCosturas => {
+    const nuevoId = `fc-${Date.now()}`;
+    const consecutivo = (evaluacionesForrosCosturas.length + 1).toString().padStart(3, '0');
+    const codigoReporte = `RPT-FC-2026-${consecutivo}`;
+    const fecha = new Date().toISOString().split('T')[0];
+
+    const nuevaItem: EvaluacionForrosCosturas = {
+      ...datos,
+      id: nuevoId,
+      codigoReporte,
+      createdAt: fecha,
+      updatedAt: fecha
+    };
+
+    setEvaluacionesForrosCosturas(prev => [nuevaItem, ...prev]);
+    soundEffects.reproducir('solicitud');
+    dispararNotificacion({
+      titulo: '🪡 Nueva Evaluación de Forros y Costuras',
+      mensaje: `Reporte ${codigoReporte} creado para la referencia "${datos.referencia}".`,
+      tipo: 'solicitud'
+    });
+
+    return nuevaItem;
+  };
+
+  const actualizarEvaluacionForrosCosturas = (id: string, datos: Partial<EvaluacionForrosCosturas>) => {
+    const fecha = new Date().toISOString().split('T')[0];
+    setEvaluacionesForrosCosturas(prev => prev.map(item => item.id === id ? { ...item, ...datos, updatedAt: fecha } : item));
+    dispararNotificacion({
+      titulo: '✏️ Evaluación Actualizada',
+      mensaje: `Los datos del reporte de forros y costuras han sido guardados.`,
+      tipo: 'solicitud'
+    });
+  };
+
+  const eliminarEvaluacionForrosCosturas = (id: string) => {
+    setEvaluacionesForrosCosturas(prev => prev.filter(item => item.id !== id));
+  };
+
+  const enviarCorreoReporteForrosCosturas = (id: string, destinatario: string, asunto: string, cuerpo: string) => {
+    const fechaEnvio = new Date().toLocaleString('es-CO');
+    const nuevoCorreo = {
+      id: `mail-${Date.now()}`,
+      destinatario,
+      asunto,
+      cuerpo,
+      fechaEnvio,
+      enviadoPor: analistaActivo?.nombreCompleto || 'Ingeniero de Calidad'
+    };
+
+    setEvaluacionesForrosCosturas(prev => prev.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          correosEnviados: [...(item.correosEnviados || []), nuevoCorreo]
+        };
+      }
+      return item;
+    }));
+
+    soundEffects.reproducir('aprobado');
+    dispararNotificacion({
+      titulo: '📧 Correo Enviado Exitosamente',
+      mensaje: `Reporte enviado a ${destinatario} con asunto "${asunto}".`,
+      tipo: 'aprobado'
+    });
+  };
+
+  return (
+    <QualityContext.Provider
+      value={{
+        analistas,
+        analistaActivo,
+        cambiarAnalistaConPin,
+        obtenerSelloResponsable,
+        crearAnalista,
+        actualizarAnalista,
+        eliminarAnalista,
+        muestras,
+        muestrasFiltradas,
+        areaActual,
+        setAreaActual,
+        filtros,
+        setFiltros,
+        resetearFiltros,
+        muestraSeleccionada,
+        setMuestraSeleccionada,
+        modalFichaAbierto,
+        setModalFichaAbierto,
+        modalNuevaMuestraAbierto,
+        setModalNuevaMuestraAbierto,
+        modalImportarAbierto,
+        setModalImportarAbierto,
+        modalAlertasLeadTimeAbierto,
+        setModalAlertasLeadTimeAbierto,
+        modalSelectorAreaAbierto,
+        setModalSelectorAreaAbierto,
+        actualizarDictamenArea,
+        agregarMuestra,
+        actualizarMuestra,
+        eliminarMuestra,
+        importarMuestrasMasivas,
+        restablecerDatosIniciales,
+        limpiarTodosLosDatos,
+        kpis,
+        rankingCausas,
+        calidadProveedores,
+        listaProveedoresUnicos,
+        listaMarcasUnicas,
+        solicitudesTelas,
+        agregarSolicitudTelas,
+        enviarSolicitudTelasALaboratorio,
+        actualizarItemTelaLab,
+        responderSolicitudTelas,
+        registrarDecisionCompraTela,
+        solicitudesAccesorios,
+        agregarSolicitudAccesorios,
+        enviarSolicitudAccesoriosALaboratorio,
+        actualizarItemAccesorioLab,
+        actualizarDictamenSolicitudAccesorios,
+        responderSolicitudAccesorios,
+        fichasTecnicasHistorial,
+        consultarFichaTecnicaHistorica,
+        guardarFichaTecnica,
+        guardarFichaTecnicaProveedor,
+        importarFichasTecnicasExcel,
+        notificacionesActivas,
+        dispararNotificacion,
+        eliminarNotificacion,
+        evaluacionesForrosCosturas,
+        agregarEvaluacionForrosCosturas,
+        actualizarEvaluacionForrosCosturas,
+        eliminarEvaluacionForrosCosturas,
+        enviarCorreoReporteForrosCosturas
+      }}
+    >
+      {children}
+    </QualityContext.Provider>
+  );
+};
+
+export const useQuality = (): QualityContextType => {
+  const context = useContext(QualityContext);
+  if (!context) {
+    throw new Error('useQuality debe usarse dentro de un QualityProvider');
+  }
+  return context;
+};

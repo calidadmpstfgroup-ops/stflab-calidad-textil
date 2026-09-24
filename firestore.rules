@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funciones de ayuda para verificación de autenticación y roles
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role != null ? request.auth.token.role : 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && (getUserRole() == role || getUserRole() == 'ADMIN' || getUserRole() == 'SUPERVISOR');
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (getUserRole() == 'ADMIN' || request.auth.token.admin == true);
+    }
+
+    // 1. Colección de Usuarios y Perfiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    // 2. Solicitudes de Telas (Compras -> Laboratorio)
+    match /solicitudes_telas/{solicitudId} {
+      allow read: if isAuthenticated();
+      allow create: if hasRole('COMPRAS') || isAdmin();
+      allow update: if hasRole('COMPRAS') || hasRole('LABORATORIO') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 3. Solicitudes de Accesorios (Compras -> Laboratorio)
+    match /solicitudes_accesorios/{solicitudId} {
+      allow read: if isAuthenticated();
+      allow create: if hasRole('COMPRAS') || isAdmin();
+      allow update: if hasRole('COMPRAS') || hasRole('LABORATORIO') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 4. Muestras de Laboratorio y Ensayos Técnicos
+    match /muestras_laboratorio/{muestraId} {
+      allow read: if isAuthenticated();
+      allow create, update: if hasRole('LABORATORIO') || hasRole('COMPRAS') || hasRole('PATRONAJE') || hasRole('CORTE') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 5. Repositorio Histórico de Fichas Técnicas del Fabricante
+    match /fichas_tecnicas_historicas/{fichaId} {
+      allow read: if isAuthenticated();
+      allow create, update: if hasRole('COMPRAS') || hasRole('LABORATORIO') || hasRole('PROVEEDOR') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 6. Revisión de Prendas & Carelabels
+    match /revision_prendas/{prendaId} {
+      allow read: if isAuthenticated();
+      allow create, update: if hasRole('REVISION_PRENDAS') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 7. Registro de Auditoría & Trazabilidad (Solo lectura para usuarios, creación automática, no eliminación)
+    match /auditoria_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Los logs de auditoría son inmutables
+    }
+
+    match /stflab_auditoria_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Los logs de auditoría son inmutables
+    }
+  }
+}

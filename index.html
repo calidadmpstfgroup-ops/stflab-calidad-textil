@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>STFLAB - Laboratorio y Control de Calidad Textil | STF GROUP S.A.</title>
+    <meta name="description" content="STFLAB: Sistema integrado de control de calidad textil y trazabilidad para Laboratorio, Compras, Patronaje y Corte - STF GROUP S.A." />
+    <meta property="og:title" content="STFLAB - STF GROUP S.A." />
+    <meta property="og:description" content="Sistema integrado de control de calidad textil y trazabilidad bidimensional para Laboratorio, Compras, Patronaje y Corte." />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C59B27' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7'/><path d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/><path d='M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4'/><path d='M2 7h20'/></svg>" />
+    <meta name="theme-color" content="#1A1612" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Studio F Lab" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="min-h-screen antialiased selection:bg-[#C6A466]/30">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- PWA Service Worker Safe Handler -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        var isIframe = window.self !== window.top;
+        if (isIframe) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(r) { r.unregister(); });
+          }).catch(function() {});
+        } else if (window.isSecureContext) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(reg) {
+                console.log('PWA Service Worker activo:', reg.scope);
+              })
+              .catch(function(err) {
+                console.warn('PWA Service Worker notice:', err);
+              });
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

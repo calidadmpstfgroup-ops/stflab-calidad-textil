@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="100%" height="100%">
+  <style>
+    .stf-bold { font-family: 'Helvetica Neue', Arial, 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 42px; fill: #1C1712; letter-spacing: -0.5px; }
+    .group-thin { font-family: 'Helvetica Neue', Arial, 'Plus Jakarta Sans', sans-serif; font-weight: 200; font-size: 42px; fill: none; stroke: #1C1712; stroke-width: 1.2px; letter-spacing: 3px; }
+    .sa-text { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 11px; fill: #1C1712; }
+    .sub-brand { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 11.5px; fill: #27211B; letter-spacing: 4px; }
+    .divider { stroke: #1C1712; stroke-width: 1.2px; opacity: 0.9; }
+  </style>
+  <g transform="translate(10, 5)">
+    <!-- STF Bold -->
+    <text x="0" y="40" class="stf-bold">STF</text>
+    <!-- GROUP Thin Outline -->
+    <text x="96" y="40" class="group-thin">GROUP</text>
+    <!-- S.A. -->
+    <text x="268" y="24" class="sa-text">S.A.</text>
+    <!-- Horizontal Line -->
+    <line x1="0" y1="48" x2="295" y2="48" class="divider" />
+    <!-- Sub-brands -->
+    <text x="147.5" y="65" text-anchor="middle" class="sub-brand">STUDIO F  ·  ELA  ·  STF MAN</text>
+  </g>
+</svg>
