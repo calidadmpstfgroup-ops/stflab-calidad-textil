@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuality } from '../../context/QualityContext';
 import { FichaTecnicaHistoricaVersionada, VersionFichaTecnica } from '../../types';
 import { 
@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Eye,
   Sliders,
-  Paperclip
+  Paperclip,
+  ChevronDown
 } from 'lucide-react';
 import { ExploradorFichasModal } from '../fichas-tecnicas/ExploradorFichasModal';
 import { exportarFichaAWord, exportarFichaAPDF } from '../../utils/fichaTecnicaFormatters';
@@ -36,6 +37,19 @@ export const BibliotecaView: React.FC = () => {
 
   const [isModalExploradorOpen, setIsModalExploradorOpen] = useState<boolean>(false);
   const [isModalFormatoCompletoOpen, setIsModalFormatoCompletoOpen] = useState<boolean>(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú de exportación al hacer clic afuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filtrado de Fichas Técnicas
   const filteredFichas = (fichasTecnicasHistorial || []).filter(f => 
@@ -235,34 +249,74 @@ OBSERVACIONES DEL FABRICANTE:
                 <span>Formato STF GROUP</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => exportarFichaAWord(currentFicha, currentVersion)}
-                className="bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-500/40 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
-                title="Descargar documento Microsoft Word (.doc)"
-              >
-                <Download className="h-4 w-4 text-blue-400" />
-                <span>Exportar Word</span>
-              </button>
+              {/* Botón Unificado de Exportación (Word, PDF, CSV) */}
+              <div className="relative" ref={exportMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  className="bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-700 hover:from-blue-600 hover:to-cyan-600 text-white font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-2 shadow-md hover:shadow-cyan-500/20 transition-all cursor-pointer border border-cyan-400/30"
+                  title="Exportar ficha técnica en formato Word, PDF o CSV"
+                >
+                  <Download className="h-4 w-4 text-cyan-300" />
+                  <span>Exportar Ficha</span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-white/80 transition-transform duration-200 ${isExportMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => exportarFichaAPDF(currentFicha, currentVersion)}
-                className="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-500/40 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
-                title="Generar o imprimir PDF oficial de alta resolución"
-              >
-                <FileText className="h-4 w-4 text-rose-400" />
-                <span>Exportar PDF</span>
-              </button>
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1f2430]/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-2xl p-1.5 z-50 animate-fade-in space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExportMenuOpen(false);
+                        exportarFichaAWord(currentFicha, currentVersion);
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-blue-200 hover:text-white hover:bg-blue-600/30 transition-all cursor-pointer"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                        <Download className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-left leading-tight">
+                        <span className="block font-bold">Exportar Word</span>
+                        <span className="text-[10px] text-blue-300/70">Documento .doc editable</span>
+                      </div>
+                    </button>
 
-              <button
-                type="button"
-                onClick={handleExportExcel}
-                className="bg-[#485C3E] hover:bg-[#5A734E] text-[#FBF8F2] font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-                <span>Exportar CSV</span>
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExportMenuOpen(false);
+                        exportarFichaAPDF(currentFicha, currentVersion);
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-200 hover:text-white hover:bg-rose-600/30 transition-all cursor-pointer"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400">
+                        <FileText className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-left leading-tight">
+                        <span className="block font-bold">Exportar PDF</span>
+                        <span className="text-[10px] text-rose-300/70">Impresión oficial vectorizada</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExportMenuOpen(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-200 hover:text-white hover:bg-emerald-600/30 transition-all cursor-pointer"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-left leading-tight">
+                        <span className="block font-bold">Exportar CSV</span>
+                        <span className="text-[10px] text-emerald-300/70">Hoja de cálculo Excel / Datos</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
