@@ -48,26 +48,26 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- PWA Service Worker Safe Handler -->
+    <!-- Actualizador en Tiempo Real (Limpieza de SW / Caché Obsoleto) -->
     <script>
-      if ('serviceWorker' in navigator) {
-        var isIframe = window.self !== window.top;
-        if (isIframe) {
+      (function() {
+        if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            registrations.forEach(function(r) { r.unregister(); });
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister();
+            }
           }).catch(function() {});
-        } else if (window.isSecureContext) {
-          window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js')
-              .then(function(reg) {
-                console.log('PWA Service Worker activo:', reg.scope);
-              })
-              .catch(function(err) {
-                console.warn('PWA Service Worker notice:', err);
-              });
-          });
         }
-      }
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (var j = 0; j < names.length; j++) {
+              if (names[j].startsWith('studio-f-lab')) {
+                caches.delete(names[j]);
+              }
+            }
+          }).catch(function() {});
+        }
+      })();
     </script>
   </body>
 </html>
