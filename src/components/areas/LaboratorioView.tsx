@@ -10,8 +10,8 @@ import { LaboratorioAccesorios } from '../laboratorio/LaboratorioAccesorios';
 import { HistorialLaboratorio } from '../laboratorio/HistorialLaboratorio';
 import { EvaluacionForrosCosturasView } from '../laboratorio/EvaluacionForrosCosturasView';
 import { CalculadoraLaboratorioModal } from '../laboratorio/CalculadoraLaboratorioModal';
+import { Sparkles } from 'lucide-react';
 
-import { Sparkles, Bot } from 'lucide-react';
 
 export const LaboratorioView: React.FC = () => {
   const {
@@ -256,18 +256,6 @@ export const LaboratorioView: React.FC = () => {
         />
       )}
 
-      {/* FLOATING IA ASSISTANT WIDGET */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          type="button"
-          onClick={() => alert('🤖 ASISTENTE IA STFGROUP LAB:\n\nDiagnóstico de Ensayos Técnicos:\n• Recuerda evaluar Pilling (NTC 2051), Solidez Lavado (NTC 1155), Frote Húmedo/Seco (NTC 786) y Prueba Fusionado (NTC 4873).\n• En Grupo G puedes ingresar Ancho Total y Útil Desengome.\n• Al hacer clic en "Enviar a Compras", la solicitud se moverá automáticamente al Historial.')}
-          className="bg-slate-900 hover:bg-slate-800 border border-amber-400/40 text-amber-300 font-black text-xs px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95"
-        >
-          <Bot className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span>🤖 ASISTENTE IA</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        </button>
-      </div>
 
       {/* Modal de Búsqueda de Ficha Técnica */}
       <BuscarFichaLaboratorioModal
