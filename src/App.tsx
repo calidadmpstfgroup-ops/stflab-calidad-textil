@@ -19,6 +19,7 @@ import { NewSampleModal } from './components/common/NewSampleModal';
 import { BulkImportModal } from './components/common/BulkImportModal';
 import { NotificationToastContainer } from './components/common/NotificationToastContainer';
 import { PapeleraReciclajeModal } from './components/common/PapeleraReciclajeModal';
+import { VisorCorreoModal } from './components/common/VisorCorreoModal';
 import { ExploradorFichasModal } from './components/fichas-tecnicas/ExploradorFichasModal';
 import { PortalProveedorModal } from './components/portal-proveedor/PortalProveedorModal';
 import { AsistenteIAModal } from './components/ai-assistant/AsistenteIAModal';
@@ -39,7 +40,7 @@ import { UserRole, AreaType } from './types';
 import { sincronizarSesionUsuarioActual, mapearAreaAModulo } from './services/monitoringService';
 
 const MainContent: React.FC = () => {
-  const { areaActual } = useQuality();
+  const { areaActual, correoModal, modalCorreoAbierto, cerrarVisorCorreo } = useQuality();
 
   return (
     <main className="w-full max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 transition-all font-sans">
@@ -67,6 +68,11 @@ const MainContent: React.FC = () => {
       <BulkImportModal />
       <NotificationToastContainer />
       <PapeleraReciclajeModal />
+      <VisorCorreoModal
+        correo={correoModal}
+        abierto={modalCorreoAbierto}
+        onCerrar={cerrarVisorCorreo}
+      />
 
     </main>
   );

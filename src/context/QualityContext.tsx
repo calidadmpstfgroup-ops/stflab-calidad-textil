@@ -47,6 +47,11 @@ import {
   registrarLogAuditoria,
   COLECCIONES
 } from '../services/firestoreService';
+import { 
+  emitirNotificacionCorreoAutomatica, 
+  CORREOS_CORPORATIVOS_STF,
+  RegistroHistorialCorreo 
+} from '../services/emailNotificationService';
 
 interface QualityContextType {
   muestras: MuestraTextil[];
@@ -82,6 +87,12 @@ interface QualityContextType {
   setModalSelectorAreaAbierto: (abierto: boolean) => void;
   modalPapeleraAbierto: boolean;
   setModalPapeleraAbierto: (abierto: boolean) => void;
+
+  // 📧 Visor de Correos Formales
+  correoModal: RegistroHistorialCorreo | null;
+  modalCorreoAbierto: boolean;
+  abrirVisorCorreo: (correo: RegistroHistorialCorreo) => void;
+  cerrarVisorCorreo: () => void;
 
   // 🗑️ Papelera de Reciclaje
   papelera: ItemPapelera[];
@@ -419,6 +430,20 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [modalAlertasLeadTimeAbierto, setModalAlertasLeadTimeAbierto] = useState(false);
   const [modalSelectorAreaAbierto, setModalSelectorAreaAbierto] = useState(false);
+
+  // 📧 Visor de Correos Formales
+  const [correoModal, setCorreoModal] = useState<RegistroHistorialCorreo | null>(null);
+  const [modalCorreoAbierto, setModalCorreoAbierto] = useState(false);
+
+  const abrirVisorCorreo = (correo: RegistroHistorialCorreo) => {
+    setCorreoModal(correo);
+    setModalCorreoAbierto(true);
+  };
+
+  const cerrarVisorCorreo = () => {
+    setModalCorreoAbierto(false);
+    setCorreoModal(null);
+  };
 
   // 🔔 Estado y Gestor de Notificaciones Animadas & Sonidos
   const [notificacionesActivas, setNotificacionesActivas] = useState<NotificacionItem[]>([]);
@@ -877,6 +902,40 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
       subseccion: 'telas',
       accionLabel: 'Ver en Laboratorio - Telas'
     });
+
+    // 📧 Emisión de Correo Formal Automático a Laboratorio
+    emitirNotificacionCorreoAutomatica({
+      evento: 'SOLICITUD_COMPRAS_TELAS',
+      solicitudId: solicitud.id,
+      numeroSolicitud: solicitud.numeroSolicitud,
+      tipo: 'telas',
+      remitente: {
+        nombre: firma.nombreCompleto,
+        area: 'compras',
+        cargo: firma.rolEspecifico || firma.rol
+      },
+      destinatario: {
+        area: 'laboratorio',
+        emailPrincipal: CORREOS_CORPORATIVOS_STF.laboratorio
+      },
+      proveedor: solicitud.proveedor,
+      articulos: (solicitud.telas || []).map(t => ({
+        referencia: t.referencia,
+        descripcion: t.color ? `Tela color ${t.color}` : `Ref. ${t.referencia}`,
+        observacion: t.observacion || 'Pendiente de ensayos técnicos'
+      })),
+      observacionesGenerales: solicitud.observacionesGenerales
+    }).then(({ registro }) => {
+      dispararNotificacion({
+        tipo: 'solicitud',
+        titulo: '📧 Correo Notificado a Laboratorio',
+        mensaje: `Se generó correo formal corporativo para Laboratorio (${CORREOS_CORPORATIVOS_STF.laboratorio}) con enlace directo a la solicitud ${solicitud.numeroSolicitud}.`,
+        areaDestino: 'laboratorio',
+        subseccion: 'telas',
+        accionLabel: 'Ver Correo Formal',
+        onAccion: () => abrirVisorCorreo(registro)
+      });
+    }).catch(e => console.warn('Aviso de notificación correo:', e));
   };
 
   const enviarSolicitudTelasALaboratorio = (solicitudId: string) => {
@@ -936,6 +995,30 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           subseccion: 'telas',
           accionLabel: 'Ver en Laboratorio - Telas'
         });
+
+        // 📧 Emisión de Correo Formal Automático a Laboratorio
+        emitirNotificacionCorreoAutomatica({
+          evento: 'SOLICITUD_COMPRAS_TELAS',
+          solicitudId: sol.id,
+          numeroSolicitud: sol.numeroSolicitud,
+          tipo: 'telas',
+          remitente: {
+            nombre: firma.nombreCompleto,
+            area: 'compras',
+            cargo: firma.rolEspecifico || firma.rol
+          },
+          destinatario: {
+            area: 'laboratorio',
+            emailPrincipal: CORREOS_CORPORATIVOS_STF.laboratorio
+          },
+          proveedor: sol.proveedor,
+          articulos: (sol.telas || []).map(t => ({
+            referencia: t.referencia,
+            descripcion: t.color ? `Tela color ${t.color}` : `Ref. ${t.referencia}`,
+            observacion: t.observacion || 'Transferida para análisis técnico'
+          })),
+          observacionesGenerales: sol.observacionesGenerales
+        }).catch(e => console.warn('Aviso de notificación correo:', e));
 
         return actualizada;
       })
@@ -1088,6 +1171,43 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           accionLabel: 'Decidir Compra en Compras'
         });
 
+        // 📧 Emisión de Correo Formal Automático a Compras
+        emitirNotificacionCorreoAutomatica({
+          evento: 'RESPUESTA_LAB_TELAS',
+          solicitudId: sol.id,
+          numeroSolicitud: sol.numeroSolicitud,
+          tipo: 'telas',
+          remitente: {
+            nombre: firma.nombreCompleto,
+            area: 'laboratorio',
+            cargo: firma.rolEspecifico || firma.rol
+          },
+          destinatario: {
+            area: 'compras',
+            emailPrincipal: CORREOS_CORPORATIVOS_STF.compras
+          },
+          proveedor: sol.proveedor,
+          dictamenGlobal: nuevoDictamenGlobal,
+          responsableLab: firma.nombreCompleto,
+          articulos: telasActualizadas.map(t => ({
+            referencia: t.referencia,
+            descripcion: t.color ? `Tela color ${t.color}` : `Ref. ${t.referencia}`,
+            dictamen: t.dictamen,
+            resultado: t.resultadoLab,
+            observacion: t.observacionesLabRespuesta || (t.evaluacionTecnica ? `Encogimiento L: ${t.evaluacionTecnica.encogimientoLargo}%, A: ${t.evaluacionTecnica.encogimientoAncho}%` : 'Conforme a ensayos')
+          })),
+          observacionesGenerales: datosRespuesta.observacionesLabRespuesta || `Dictamen técnico emitido por ${firma.nombreCompleto}: [${datosRespuesta.dictamen}]`
+        }).then(({ registro }) => {
+          dispararNotificacion({
+            tipo: 'solicitud',
+            titulo: '📧 Correo Notificado a Compras',
+            mensaje: `Se notificó por correo formal a Compras (${CORREOS_CORPORATIVOS_STF.compras}) con el dictamen de ${sol.numeroSolicitud}.`,
+            areaDestino: 'compras',
+            accionLabel: 'Ver Correo Formal',
+            onAccion: () => abrirVisorCorreo(registro)
+          });
+        }).catch(e => console.warn('Aviso de notificación correo:', e));
+
         return solicitudModificada;
       })
     );
@@ -1208,6 +1328,40 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
       subseccion: 'accesorios',
       accionLabel: 'Ver en Laboratorio - Insumos'
     });
+
+    // 📧 Emisión de Correo Formal Automático a Laboratorio
+    emitirNotificacionCorreoAutomatica({
+      evento: 'SOLICITUD_COMPRAS_INSUMOS',
+      solicitudId: solicitud.id,
+      numeroSolicitud: solicitud.numeroSolicitud,
+      tipo: 'insumos',
+      remitente: {
+        nombre: firma.nombreCompleto,
+        area: 'compras',
+        cargo: firma.rolEspecifico || firma.rol
+      },
+      destinatario: {
+        area: 'laboratorio',
+        emailPrincipal: CORREOS_CORPORATIVOS_STF.laboratorio
+      },
+      proveedor: solicitud.proveedor,
+      articulos: (solicitud.muestras || []).map(m => ({
+        referencia: m.referencia,
+        descripcion: m.descripcionInsumo || 'Insumo de confección',
+        observacion: m.observacion || 'Pendiente de inspección técnica'
+      })),
+      observacionesGenerales: solicitud.observacionesGenerales
+    }).then(({ registro }) => {
+      dispararNotificacion({
+        tipo: 'solicitud',
+        titulo: '📧 Correo Notificado a Laboratorio',
+        mensaje: `Se notificó por correo formal a Laboratorio (${CORREOS_CORPORATIVOS_STF.laboratorio}) con la solicitud de insumos ${solicitud.numeroSolicitud}.`,
+        areaDestino: 'laboratorio',
+        subseccion: 'accesorios',
+        accionLabel: 'Ver Correo Formal',
+        onAccion: () => abrirVisorCorreo(registro)
+      });
+    }).catch(e => console.warn('Aviso de notificación correo:', e));
   };
 
   const enviarSolicitudAccesoriosALaboratorio = (solicitudId: string) => {
@@ -1226,6 +1380,30 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           subseccion: 'accesorios',
           accionLabel: 'Ver en Laboratorio - Insumos'
         });
+
+        // 📧 Emisión de Correo Formal Automático a Laboratorio
+        emitirNotificacionCorreoAutomatica({
+          evento: 'SOLICITUD_COMPRAS_INSUMOS',
+          solicitudId: sol.id,
+          numeroSolicitud: sol.numeroSolicitud,
+          tipo: 'insumos',
+          remitente: {
+            nombre: firma.nombreCompleto,
+            area: 'compras',
+            cargo: firma.rolEspecifico || firma.rol
+          },
+          destinatario: {
+            area: 'laboratorio',
+            emailPrincipal: CORREOS_CORPORATIVOS_STF.laboratorio
+          },
+          proveedor: sol.proveedor,
+          articulos: (sol.muestras || []).map(m => ({
+            referencia: m.referencia,
+            descripcion: m.descripcionInsumo || 'Insumo de confección',
+            observacion: m.observacion || 'Transferida formalmente'
+          })),
+          observacionesGenerales: sol.observacionesGenerales
+        }).catch(e => console.warn('Aviso de notificación correo:', e));
 
         return actualizada;
       })
@@ -1328,6 +1506,43 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           areaDestino: 'compras',
           accionLabel: 'Ver en Compras'
         });
+
+        // 📧 Emisión de Correo Formal Automático a Compras
+        emitirNotificacionCorreoAutomatica({
+          evento: 'RESPUESTA_LAB_INSUMOS',
+          solicitudId: sol.id,
+          numeroSolicitud: sol.numeroSolicitud,
+          tipo: 'insumos',
+          remitente: {
+            nombre: firma.nombreCompleto,
+            area: 'laboratorio',
+            cargo: firma.rolEspecifico || firma.rol
+          },
+          destinatario: {
+            area: 'compras',
+            emailPrincipal: CORREOS_CORPORATIVOS_STF.compras
+          },
+          proveedor: sol.proveedor,
+          dictamenGlobal: nuevoEstadoGlobal,
+          responsableLab: firma.nombreCompleto || datosRespuesta.responsable,
+          articulos: muestrasFinales.map(m => ({
+            referencia: m.referencia,
+            descripcion: m.descripcionInsumo || 'Insumo de confección',
+            dictamen: m.dictamen,
+            resultado: m.resultado,
+            observacion: m.observacion || 'Conforme a estándar técnico de insumos'
+          })),
+          observacionesGenerales: datosRespuesta.observacionesLab || `Dictamen emitido por ${firma.nombreCompleto}: [${nuevoEstadoGlobal}]`
+        }).then(({ registro }) => {
+          dispararNotificacion({
+            tipo: 'solicitud',
+            titulo: '📧 Correo Notificado a Compras',
+            mensaje: `Se notificó por correo formal a Compras (${CORREOS_CORPORATIVOS_STF.compras}) con el dictamen de insumos ${sol.numeroSolicitud}.`,
+            areaDestino: 'compras',
+            accionLabel: 'Ver Correo Formal',
+            onAccion: () => abrirVisorCorreo(registro)
+          });
+        }).catch(e => console.warn('Aviso de notificación correo:', e));
 
         return solicitudRespondida;
       })
@@ -1587,6 +1802,10 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
         enviarCorreoReporteForrosCosturas,
         modalPapeleraAbierto,
         setModalPapeleraAbierto,
+        correoModal,
+        modalCorreoAbierto,
+        abrirVisorCorreo,
+        cerrarVisorCorreo,
         papelera,
         eliminarSolicitudTelas,
         eliminarSolicitudAccesorios,

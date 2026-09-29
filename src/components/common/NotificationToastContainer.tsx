@@ -14,7 +14,8 @@ import {
   ArrowRight, 
   CheckCircle2, 
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Mail
 } from 'lucide-react';
 
 export interface NotificacionItem {
@@ -25,9 +26,11 @@ export interface NotificacionItem {
   areaDestino?: AreaType;
   subseccion?: string; // ej: 'telas' | 'accesorios'
   accionLabel?: string;
+  onAccion?: () => void;
   tiempo?: string;
   leido?: boolean;
 }
+
 
 export const NotificationToastContainer: React.FC = () => {
   const { notificacionesActivas, eliminarNotificacion, setAreaActual, navegarA } = useQuality() as any;
@@ -148,21 +151,23 @@ export const NotificationToastContainer: React.FC = () => {
                 <h4 className="text-xs font-black text-white leading-snug">{notif.titulo}</h4>
                 <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">{notif.mensaje}</p>
 
-                {/* Botón de Acción Rápida si tiene área destino */}
-                {notif.areaDestino && (
+                {/* Botón de Acción Rápida si tiene área destino o callback */}
+                {(notif.areaDestino || notif.onAccion) && (
                   <div className="mt-2.5 flex items-center justify-end">
                     <button
                       onClick={() => {
-                        if (navegarA) {
+                        if (notif.onAccion) {
+                          notif.onAccion();
+                        } else if (navegarA) {
                           navegarA(notif.areaDestino!, notif.subseccion);
-                        } else {
-                          setAreaActual(notif.areaDestino!);
+                        } else if (notif.areaDestino) {
+                          setAreaActual(notif.areaDestino);
                         }
                         eliminarNotificacion(notif.id);
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-black shadow transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer text-white ${estiloPorTipo.btnColor}`}
                     >
-                      <span className="text-white font-bold">{notif.accionLabel || `Ir a ${notif.areaDestino.toUpperCase()}`}</span>
+                      <span className="text-white font-bold">{notif.accionLabel || (notif.areaDestino ? `Ir a ${notif.areaDestino.toUpperCase()}` : 'Ver')}</span>
                       <ArrowRight className="w-3 h-3 text-white" />
                     </button>
                   </div>
