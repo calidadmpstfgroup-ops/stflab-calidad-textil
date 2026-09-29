@@ -61,8 +61,37 @@ export const ConfiguracionView: React.FC = () => {
   const [storageSize, setStorageSize] = useState<string>("0 KB");
   const [activeSettingsTab, setActiveSettingsTab] = useState<'usuarios' | 'apariencia' | 'tolerancias' | 'pwa' | 'almacenamiento'>('usuarios');
   const { usuario, usuariosSistema, actualizarEstadoUsuario, eliminarUsuarioSistema, crearUsuarioSistema, actualizarUsuarioSistema } = useAuth();
-  const esAdministrador = usuario?.role === 'ADMIN' || 
-                          usuario?.rolEspecifico?.toUpperCase().includes('ADMIN');
+  
+  // Administradores y Soporte Técnico tienen privilegios totales para gestionar y editar TODOS los usuarios
+  const esAdminOSoporte = usuario?.role === 'ADMIN' || 
+                          usuario?.role === 'SOPORTE_TECNICO' ||
+                          usuario?.role === 'soporte_tecnico' ||
+                          usuario?.rolEspecifico?.toUpperCase().includes('ADMIN') ||
+                          usuario?.rolEspecifico?.toLowerCase().includes('soporte') ||
+                          usuario?.areaAsignada === 'soporte-tecnico';
+  const esAdministrador = esAdminOSoporte; // Compatibilidad de permisos
+
+  // Determinación de permisos de edición según requerimiento:
+  // 1. Administradores y Soporte Técnico pueden editar TODOS los usuarios.
+  // 2. El resto de áreas SOLO pueden editar sus usuarios (misma área o perfil propio).
+  const puedeEditarUsuario = (u: UserProfile | null | undefined): boolean => {
+    if (!usuario || !u) return false;
+    if (esAdminOSoporte) return true;
+
+    // Perfil propio
+    if (u.uid === usuario.uid) return true;
+    if (u.nombreUsuario && usuario.nombreUsuario && u.nombreUsuario.toLowerCase() === usuario.nombreUsuario.toLowerCase()) return true;
+    if (u.email && usuario.email && u.email.toLowerCase() === usuario.email.toLowerCase()) return true;
+
+    // Usuarios del resto de áreas: ÚNICAMENTE pueden editar usuarios asignados a su misma área
+    const miArea = (usuario.areaAsignada || '').toLowerCase().trim();
+    const uArea = (u.areaAsignada || '').toLowerCase().trim();
+    if (miArea && uArea && miArea === uArea) {
+      return true;
+    }
+    return false;
+  };
+
   const [mostrarFormularioUsuario, setMostrarFormularioUsuario] = useState(false);
   const [usuarioParaEditar, setUsuarioParaEditar] = useState<UserProfile | null>(null);
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
@@ -85,14 +114,38 @@ export const ConfiguracionView: React.FC = () => {
     setFormPassword('');
     setFormShowPassword(false);
     setFormEmail('');
-    setFormArea('laboratorio');
-    setFormRole('LABORATORIO');
-    setFormRolEspecifico('ANALISTA_LABORATORIO');
+    
+    // Si es Administrador o Soporte Técnico, puede asignar cualquier área
+    // Si es de otra área, se asigna forzosamente su propia área de trabajo
+    const areaDefault = esAdminOSoporte ? 'laboratorio' : ((usuario?.areaAsignada as AreaType) || 'laboratorio');
+    setFormArea(areaDefault);
+
+    const rolDefault: UserRole = 
+      areaDefault === 'laboratorio' ? 'LABORATORIO' :
+      areaDefault === 'compras' ? 'COMPRAS' :
+      areaDefault === 'patronaje' ? 'PATRONAJE' :
+      areaDefault === 'corte' ? 'CORTE' :
+      areaDefault === 'soporte-tecnico' ? 'SOPORTE_TECNICO' : 'LABORATORIO';
+
+    setFormRole(rolDefault);
+    setFormRolEspecifico(
+      rolDefault === 'LABORATORIO' ? 'ANALISTA_LABORATORIO' :
+      rolDefault === 'COMPRAS' ? 'ANALISTA_COMPRAS' :
+      rolDefault === 'PATRONAJE' ? 'PATRONISTA' :
+      rolDefault === 'CORTE' ? 'SUPERVISOR_CORTE' :
+      rolDefault === 'SOPORTE_TECNICO' ? 'soporte_tecnico' : 'ANALISTA_LABORATORIO'
+    );
     setFormActivo(true);
     setMostrarFormularioUsuario(true);
   };
 
   const handleEditarUsuario = (u: UserProfile) => {
+    // Validar permiso previo
+    if (!puedeEditarUsuario(u)) {
+      showToast('⚠️ Permiso restringido: El resto de áreas solo pueden editar usuarios de su propia área operativa.');
+      return;
+    }
+
     setUsuarioParaEditar(u);
     setFormNombreCompleto(u.displayName || '');
     setFormNombreUsuario(u.nombreUsuario || u.email.split('@')[0] || '');
@@ -116,27 +169,33 @@ export const ConfiguracionView: React.FC = () => {
     const emailFinal = formEmail.trim() || `${formNombreUsuario.trim().toLowerCase()}@stfgroup.com`;
 
     if (usuarioParaEditar) {
-      // Validar si el usuario actual tiene permiso para editar este perfil
+      // 1. Validar si el usuario actual tiene permiso para editar este perfil
+      if (!puedeEditarUsuario(usuarioParaEditar)) {
+        showToast('⚠️ Permiso denegado: El resto de áreas solo pueden editar usuarios de su propia área operativa.');
+        return;
+      }
+
       const esMiUsuario = !!(usuario && (
         usuarioParaEditar.uid === usuario.uid ||
         (usuarioParaEditar.nombreUsuario && usuario.nombreUsuario && usuarioParaEditar.nombreUsuario.toLowerCase() === usuario.nombreUsuario.toLowerCase()) ||
         (usuarioParaEditar.email && usuario.email && usuarioParaEditar.email.toLowerCase() === usuario.email.toLowerCase())
       ));
 
-      if (!esAdministrador && !esMiUsuario) {
-        showToast('⚠️ Solo los administradores pueden editar los datos de otros usuarios.');
+      // 2. Administradores y Soporte Técnico pueden modificar área y rol libremente
+      // El resto de áreas no puede cambiar el área asignada ni auto-escalar a ADMIN/SOPORTE
+      if (!esAdminOSoporte && (formRole === 'ADMIN' || formRole === 'SOPORTE_TECNICO')) {
+        showToast('⚠️ Solo Administradores y Soporte Técnico pueden asignar permisos administrativos.');
         return;
       }
 
-      // Los usuarios no-administradores no pueden auto-escalar su rol ni cambiar su área asignada
-      const areaFinal = esAdministrador ? formArea : usuarioParaEditar.areaAsignada;
-      const roleFinal = esAdministrador ? formRole : usuarioParaEditar.role;
-      const rolEspecificoFinal = esAdministrador ? formRolEspecifico : usuarioParaEditar.rolEspecifico;
-      const activoFinal = esAdministrador ? formActivo : usuarioParaEditar.activo;
+      const areaFinal = esAdminOSoporte ? formArea : (usuarioParaEditar.areaAsignada || usuario?.areaAsignada || 'laboratorio');
+      const roleFinal = esAdminOSoporte ? formRole : formRole;
+      const rolEspecificoFinal = esAdminOSoporte ? formRolEspecifico : formRolEspecifico;
+      const activoFinal = (esAdminOSoporte || !esMiUsuario) ? formActivo : usuarioParaEditar.activo;
 
       const res = await actualizarUsuarioSistema(usuarioParaEditar.uid, {
         displayName: formNombreCompleto.trim(),
-        nombreUsuario: esAdministrador ? formNombreUsuario.trim().toLowerCase() : (usuarioParaEditar.nombreUsuario || formNombreUsuario.trim().toLowerCase()),
+        nombreUsuario: esAdminOSoporte ? formNombreUsuario.trim().toLowerCase() : (usuarioParaEditar.nombreUsuario || formNombreUsuario.trim().toLowerCase()),
         email: emailFinal,
         areaAsignada: areaFinal,
         role: roleFinal,
@@ -145,9 +204,9 @@ export const ConfiguracionView: React.FC = () => {
         ...(formPassword.trim() ? { password: formPassword.trim() } : {})
       });
       if (res.exito) {
-        showToast(esAdministrador
-          ? `Usuario "${formNombreCompleto.trim()}" actualizado y guardado correctamente.`
-          : `Tu perfil personal se ha actualizado y guardado correctamente.`
+        showToast(esAdminOSoporte
+          ? `Usuario "${formNombreCompleto.trim()}" actualizado y guardado correctamente (Alcance Global).`
+          : `Usuario de área "${formNombreCompleto.trim()}" actualizado y guardado correctamente.`
         );
         setMostrarFormularioUsuario(false);
         setUsuarioParaEditar(null);
@@ -155,9 +214,12 @@ export const ConfiguracionView: React.FC = () => {
         showToast(res.mensaje);
       }
     } else {
-      // Creación de nuevos usuarios: ESTRICTAMENTE SOLO ADMINISTRADORES
-      if (!esAdministrador) {
-        showToast('⚠️ Permiso denegado: Únicamente los Administradores tienen autorización para crear nuevos usuarios.');
+      // Creación de nuevos usuarios INTERNAMENTE desde la plataforma
+      // Si no es Admin/Soporte, el usuario se crea obligatoriamente dentro de su propia área
+      const areaFinal = esAdminOSoporte ? formArea : ((usuario?.areaAsignada as AreaType) || 'laboratorio');
+
+      if (!esAdminOSoporte && (formRole === 'ADMIN' || formRole === 'SOPORTE_TECNICO')) {
+        showToast('⚠️ Solo Administradores y Soporte Técnico pueden crear cuentas con privilegios administrativos.');
         return;
       }
 
@@ -165,14 +227,14 @@ export const ConfiguracionView: React.FC = () => {
         displayName: formNombreCompleto.trim(),
         nombreUsuario: formNombreUsuario.trim().toLowerCase(),
         email: emailFinal,
-        password: formPassword.trim() || 'admin123',
-        areaAsignada: formArea,
+        password: formPassword.trim() || 'stf123',
+        areaAsignada: areaFinal,
         role: formRole,
         rolEspecifico: formRolEspecifico,
         activo: formActivo
       });
       if (res.exito) {
-        showToast(`Usuario "${formNombreCompleto.trim()}" registrado y creado exitosamente.`);
+        showToast(`Usuario "${formNombreCompleto.trim()}" registrado y creado internamente exitosamente.`);
         setMostrarFormularioUsuario(false);
         setUsuarioParaEditar(null);
       } else {
@@ -413,23 +475,23 @@ export const ConfiguracionView: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Botón: Únicamente para Administradores para Agregar Nuevos Usuarios */}
-                {esAdministrador && (
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={handleAbrirNuevoUsuario}
-                      className="px-5 py-2.5 bg-[#00b4d8] hover:bg-[#0096c7] text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center space-x-2 shadow-md hover:shadow-cyan-500/25 transition-all cursor-pointer active:scale-95"
-                      title="Registrar un nuevo usuario en el sistema (Exclusivo Administrador)"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span>Nuevo Usuario</span>
-                    </button>
-                  </div>
-                )}
+                {/* Botón: Creación interna de usuarios (Admin/Soporte para cualquier área, resto de áreas para su propia área) */}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={handleAbrirNuevoUsuario}
+                    className="px-5 py-2.5 bg-[#00b4d8] hover:bg-[#0096c7] text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center space-x-2 shadow-md hover:shadow-cyan-500/25 transition-all cursor-pointer active:scale-95"
+                    title={esAdminOSoporte 
+                      ? "Registrar internamente un nuevo usuario (Cualquier Área Operativa)" 
+                      : `Registrar internamente un nuevo usuario para el área ${(usuario?.areaAsignada || 'su área').toUpperCase()}`}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>{esAdminOSoporte ? 'Nuevo Usuario' : `Nuevo Usuario (${(usuario?.areaAsignada || 'Área').toUpperCase()})`}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Formulario Inline Integrado (Sin modal emergente) */}
+              {/* Formulario Inline Integrado (Creación y Edición Interna) */}
               {mostrarFormularioUsuario && (
                 <div className={`p-5 rounded-2xl border shadow-md space-y-4 animate-fade-in ${
                   theme === 'light'
@@ -444,13 +506,21 @@ export const ConfiguracionView: React.FC = () => {
                       <div>
                         <h4 className="font-bold text-sm">
                           {usuarioParaEditar 
-                            ? (!esAdministrador ? `Editar Mi Perfil: ${usuarioParaEditar.displayName}` : `Editar Usuario: ${usuarioParaEditar.displayName}`)
-                            : 'Registrar Nuevo Usuario'}
+                            ? (usuarioParaEditar.uid === usuario?.uid 
+                                ? `Editar Mi Perfil: ${usuarioParaEditar.displayName}` 
+                                : esAdminOSoporte 
+                                ? `Editar Usuario (Global): ${usuarioParaEditar.displayName}` 
+                                : `Editar Usuario de Área: ${usuarioParaEditar.displayName}`)
+                            : (esAdminOSoporte 
+                                ? 'Registrar Nuevo Usuario (Cualquier Área)' 
+                                : `Registrar Nuevo Usuario (Área ${(usuario?.areaAsignada || 'Actual').toUpperCase()})`)}
                         </h4>
                         <span className="text-[11px] opacity-75">
-                          {!esAdministrador 
-                            ? 'Actualice su nombre, correo y contraseña personal'
-                            : 'Configure credenciales, área operativa y rol de acceso'}
+                          {usuarioParaEditar 
+                            ? (esAdminOSoporte 
+                                ? 'Privilegios totales: puede editar datos, credenciales, área y roles de cualquier usuario' 
+                                : 'Edición de área: autorizado para actualizar los datos de usuarios de su misma área')
+                            : 'Creación interna autorizada en el sistema (no disponible desde pantalla de acceso público)'}
                         </span>
                       </div>
                     </div>
@@ -509,7 +579,7 @@ export const ConfiguracionView: React.FC = () => {
                             type={formShowPassword ? 'text' : 'password'}
                             value={formPassword}
                             onChange={(e) => setFormPassword(e.target.value)}
-                            placeholder={usuarioParaEditar ? '••••••••' : 'admin123'}
+                            placeholder={usuarioParaEditar ? '••••••••' : 'stf123'}
                             className={`w-full p-2.5 pr-9 rounded-xl text-xs font-mono font-semibold border focus:outline-none focus:border-[#00b4d8] ${
                               theme === 'light' ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#2B2B2E] border-[#424246] text-white'
                             }`}
@@ -530,35 +600,43 @@ export const ConfiguracionView: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-xs font-bold">Área de Trabajo *</label>
-                          {!esAdministrador && (
-                            <span className="text-[9px] text-amber-500 font-bold uppercase">Solo Admin</span>
+                          {!esAdminOSoporte && (
+                            <span className="text-[9px] text-amber-500 font-bold uppercase">Área Operativa Asignada</span>
                           )}
                         </div>
                         <select
                           value={formArea}
                           onChange={(e) => setFormArea(e.target.value as AreaType)}
-                          disabled={!esAdministrador}
+                          disabled={!esAdminOSoporte}
                           className={`w-full p-2.5 rounded-xl text-xs font-bold border focus:outline-none focus:border-[#00b4d8] ${
-                            !esAdministrador ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer'
+                            !esAdminOSoporte ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
                           } ${
                             theme === 'light' ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#2B2B2E] border-[#424246] text-white'
                           }`}
                         >
-                          <option value="dashboard">Administración / Dashboard</option>
-                          <option value="soporte-tecnico">Soporte Técnico / Monitoreo</option>
-                          <option value="laboratorio">Laboratorio</option>
-                          <option value="compras">Compras</option>
-                          <option value="patronaje">Patronaje</option>
-                          <option value="corte">Corte</option>
-                          <option value="portal-proveedor">Proveedor Textil</option>
+                          {esAdminOSoporte ? (
+                            <>
+                              <option value="dashboard">Administración / Dashboard</option>
+                              <option value="soporte-tecnico">Soporte Técnico / Monitoreo</option>
+                              <option value="laboratorio">Laboratorio</option>
+                              <option value="compras">Compras</option>
+                              <option value="patronaje">Patronaje</option>
+                              <option value="corte">Corte</option>
+                              <option value="portal-proveedor">Proveedor Textil</option>
+                            </>
+                          ) : (
+                            <option value={usuario?.areaAsignada || 'laboratorio'}>
+                              {(usuario?.areaAsignada || 'laboratorio').toUpperCase()} (Tu Área)
+                            </option>
+                          )}
                         </select>
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-xs font-bold">Rol Asignado *</label>
-                          {!esAdministrador && (
-                            <span className="text-[9px] text-amber-500 font-bold uppercase">Solo Admin</span>
+                          {!esAdminOSoporte && (
+                            <span className="text-[9px] text-sky-400 font-bold uppercase">Roles de Área</span>
                           )}
                         </div>
                         <select
@@ -579,21 +657,55 @@ export const ConfiguracionView: React.FC = () => {
                             };
                             setFormRolEspecifico(mapRolExt[selectedRole] || 'ANALISTA_LABORATORIO');
                           }}
-                          disabled={!esAdministrador}
-                          className={`w-full p-2.5 rounded-xl text-xs font-bold border focus:outline-none focus:border-[#00b4d8] ${
-                            !esAdministrador ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer'
-                          } ${
+                          className={`w-full p-2.5 rounded-xl text-xs font-bold border focus:outline-none focus:border-[#00b4d8] cursor-pointer ${
                             theme === 'light' ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#2B2B2E] border-[#424246] text-white'
                           }`}
                         >
-                          <option value="ADMIN">Administrador</option>
-                          <option value="SOPORTE_TECNICO">Soporte Técnico</option>
-                          <option value="LABORATORIO">Laboratorista</option>
-                          <option value="COMPRAS">Analista de Compras</option>
-                          <option value="PATRONAJE">Patronista</option>
-                          <option value="CORTE">Supervisor de Corte</option>
-                          <option value="SUPERVISOR">Supervisor General</option>
-                          <option value="PROVEEDOR">Proveedor Fabricante</option>
+                          {esAdminOSoporte ? (
+                            <>
+                              <option value="ADMIN">Administrador</option>
+                              <option value="SOPORTE_TECNICO">Soporte Técnico</option>
+                              <option value="LABORATORIO">Laboratorista</option>
+                              <option value="COMPRAS">Analista de Compras</option>
+                              <option value="PATRONAJE">Patronista</option>
+                              <option value="CORTE">Supervisor de Corte</option>
+                              <option value="SUPERVISOR">Supervisor General</option>
+                              <option value="PROVEEDOR">Proveedor Fabricante</option>
+                            </>
+                          ) : (
+                            <>
+                              {usuario?.areaAsignada === 'laboratorio' && (
+                                <>
+                                  <option value="LABORATORIO">Laboratorista / Analista</option>
+                                  <option value="SUPERVISOR">Supervisor de Laboratorio</option>
+                                </>
+                              )}
+                              {usuario?.areaAsignada === 'compras' && (
+                                <>
+                                  <option value="COMPRAS">Analista de Compras</option>
+                                  <option value="SUPERVISOR">Supervisor de Compras</option>
+                                </>
+                              )}
+                              {usuario?.areaAsignada === 'patronaje' && (
+                                <>
+                                  <option value="PATRONAJE">Patronista / CAD</option>
+                                  <option value="SUPERVISOR">Supervisor de Patronaje</option>
+                                </>
+                              )}
+                              {usuario?.areaAsignada === 'corte' && (
+                                <>
+                                  <option value="CORTE">Supervisor de Corte</option>
+                                  <option value="SUPERVISOR">Operador de Corte</option>
+                                </>
+                              )}
+                              {usuario?.areaAsignada !== 'laboratorio' && usuario?.areaAsignada !== 'compras' && usuario?.areaAsignada !== 'patronaje' && usuario?.areaAsignada !== 'corte' && (
+                                <>
+                                  <option value="LABORATORIO">Analista Operativo</option>
+                                  <option value="SUPERVISOR">Supervisor</option>
+                                </>
+                              )}
+                            </>
+                          )}
                         </select>
                       </div>
                     </div>
@@ -679,7 +791,9 @@ export const ConfiguracionView: React.FC = () => {
                         ? 'bg-cyan-100 text-cyan-800 border-cyan-300'
                         : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                     }`}>
-                      RBAC Activo
+                      {esAdminOSoporte 
+                        ? 'Gestión Global (Admin / Soporte: Edición de Todos los Usuarios)' 
+                        : `Gestión Local (Área ${(usuario?.areaAsignada || 'Mi Área').toUpperCase()}: Solo Usuarios de su Área)`}
                     </span>
                   </div>
 
@@ -733,7 +847,12 @@ export const ConfiguracionView: React.FC = () => {
                           (u.nombreUsuario && usuario.nombreUsuario && u.nombreUsuario.toLowerCase() === usuario.nombreUsuario.toLowerCase()) ||
                           (u.email && usuario.email && u.email.toLowerCase() === usuario.email.toLowerCase())
                         ));
-                        const puedeEditar = esAdministrador || esMiUsuario;
+                        const esMismaArea = !!(
+                          usuario?.areaAsignada && 
+                          u.areaAsignada && 
+                          usuario.areaAsignada.toLowerCase().trim() === u.areaAsignada.toLowerCase().trim()
+                        );
+                        const puedeEditar = puedeEditarUsuario(u);
 
                         return (
                           <tr key={u.uid} className={`transition-colors ${
@@ -777,8 +896,8 @@ export const ConfiguracionView: React.FC = () => {
                             </td>
                             <td className="py-3.5 px-4 text-center">
                               <div className="flex items-center justify-center gap-1.5">
-                                {/* Botón Editar: Solo visible para Administradores o para el propio usuario en su fila personal */}
-                                {puedeEditar && (
+                                {/* Botón Editar: Admin y Soporte pueden editar TODOS; resto de áreas solo sus usuarios y perfil propio */}
+                                {puedeEditar ? (
                                   <button
                                     type="button"
                                     onClick={() => handleEditarUsuario(u)}
@@ -787,15 +906,36 @@ export const ConfiguracionView: React.FC = () => {
                                         ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                                         : 'bg-sky-950 hover:bg-sky-900 text-sky-300 border-sky-600/40'
                                     }`}
-                                    title={esMiUsuario && !esAdministrador ? "Editar mis datos personales" : "Editar usuario"}
+                                    title={esMiUsuario 
+                                      ? "Editar mi perfil personal" 
+                                      : esAdminOSoporte 
+                                      ? "Editar usuario (Permiso Total Admin/Soporte)" 
+                                      : `Editar usuario de mi área (${(u.areaAsignada || 'Área').toUpperCase()})`}
                                   >
                                     <Edit3 className="w-3 h-3" />
-                                    <span>{esMiUsuario && !esAdministrador ? 'Mi Perfil' : 'Editar'}</span>
+                                    <span>
+                                      {esMiUsuario 
+                                        ? 'Mi Perfil' 
+                                        : esAdminOSoporte 
+                                        ? 'Editar' 
+                                        : 'Editar Área'}
+                                    </span>
                                   </button>
+                                ) : (
+                                  <span 
+                                    className={`text-[10px] font-semibold italic px-2 py-0.5 rounded-lg border ${
+                                      theme === 'light' 
+                                        ? 'bg-slate-100 text-slate-400 border-slate-200' 
+                                        : 'bg-slate-800/60 text-slate-500 border-slate-700/40'
+                                    }`}
+                                    title="Solo lectura: Tu área solo puede editar usuarios pertenecientes a tu misma área operativa"
+                                  >
+                                    Solo lectura
+                                  </span>
                                 )}
 
-                                {/* Activar/Desactivar: Exclusivo Administradores */}
-                                {esAdministrador && (
+                                {/* Activar/Desactivar: Exclusivo Administradores, Soporte Técnico o responsables de la misma área */}
+                                {(esAdminOSoporte || esMismaArea) && u.uid !== usuario?.uid && (
                                   <button
                                     type="button"
                                     onClick={() => actualizarEstadoUsuario(u.uid, !u.activo)}
@@ -804,14 +944,14 @@ export const ConfiguracionView: React.FC = () => {
                                         ? (theme === 'light' ? 'text-emerald-600 hover:text-emerald-700 border-emerald-300 hover:bg-emerald-50' : 'text-emerald-400 hover:text-emerald-300 border-emerald-500/30 hover:bg-emerald-950/40')
                                         : (theme === 'light' ? 'text-rose-600 hover:text-rose-700 border-rose-300 hover:bg-rose-50' : 'text-rose-400 hover:text-rose-300 border-rose-500/30 hover:bg-rose-950/40')
                                     }`}
-                                    title={u.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                                    title={u.activo ? 'Desactivar acceso al usuario' : 'Activar acceso al usuario'}
                                   >
                                     {u.activo ? <CheckCircle2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
                                   </button>
                                 )}
 
-                                {/* Opción de borrar/eliminar: Exclusivo Administradores */}
-                                {esAdministrador && (
+                                {/* Opción de borrar/eliminar: Exclusivo Administradores y Soporte Técnico */}
+                                {esAdminOSoporte && u.uid !== usuario?.uid && (
                                   <button
                                     type="button"
                                     onClick={() => handleEliminarUsuario(u)}
@@ -824,10 +964,6 @@ export const ConfiguracionView: React.FC = () => {
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
-                                )}
-
-                                {!puedeEditar && !esAdministrador && (
-                                  <span className="text-[10px] text-slate-400 italic">Solo lectura</span>
                                 )}
                               </div>
                             </td>

@@ -69,7 +69,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         });
       }
     } catch (err: any) {
-      setLocalError(err?.message || 'Usuario o contraseña incorrectos. Verifica tus credenciales.');
+      setLocalError(err?.message || 'Credenciales incorrectas: El usuario o contraseña ingresados no son válidos. Acceso denegado.');
     } finally {
       setLoadingLocal(false);
     }
@@ -147,7 +147,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         )}
       </button>
 
-      <div className={`max-w-md w-full rounded-3xl shadow-2xl border p-8 space-y-7 animate-fade-in relative overflow-hidden transition-colors ${
+      <div className={`max-w-md w-full rounded-3xl shadow-2xl border p-8 space-y-6 animate-fade-in relative overflow-hidden transition-colors ${
         esModoClaro
           ? 'bg-white border-slate-200 text-slate-900'
           : 'bg-slate-900 border-slate-800 text-white'
@@ -173,6 +173,18 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </h2>
           <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">
             {modo === 'login' ? 'Laboratorio Materias Primas & Calidad' : 'Restablecer Clave de Acceso'}
+          </p>
+        </div>
+
+        {/* Banner Informativo de Creación Interna de Cuentas */}
+        <div className={`p-3 rounded-2xl border flex items-start space-x-2.5 text-[11px] leading-relaxed transition-colors ${
+          esModoClaro 
+            ? 'bg-amber-50/80 border-amber-200 text-amber-900' 
+            : 'bg-amber-950/20 border-amber-500/30 text-amber-200/90'
+        }`}>
+          <Lock className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p>
+            <strong className="font-bold">Acceso Corporativo Seguro:</strong> Las cuentas son creadas internamente por Administración y Soporte Técnico. No existe registro público desde esta pantalla.
           </p>
         </div>
 

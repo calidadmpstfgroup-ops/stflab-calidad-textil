@@ -34,6 +34,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-admin-01',
     email: 'admin.calidad@stfgroup.com',
     nombreUsuario: 'admin.calidad',
+    password: 'admin123',
     displayName: 'Administrador STFLab',
     role: 'ADMIN',
     rolEspecifico: 'ADMINISTRADOR',
@@ -50,6 +51,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-lab-ana',
     email: 'ana.gonzalez@stfgroup.com',
     nombreUsuario: 'ana.gonzalez',
+    password: 'lab123',
     displayName: 'Ana González',
     role: 'LABORATORIO',
     rolEspecifico: 'Analista de Laboratorio',
@@ -65,6 +67,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-lab-jefe',
     email: 'javier.ortiz@stfgroup.com',
     nombreUsuario: 'jortiz',
+    password: 'lab123',
     displayName: 'Javier Ortiz',
     role: 'LABORATORIO',
     rolEspecifico: 'Jefe de Laboratorio',
@@ -80,6 +83,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-compras-carlos',
     email: 'carlos.perez@stfgroup.com',
     nombreUsuario: 'carlos.perez',
+    password: 'compras123',
     displayName: 'Carlos Pérez',
     role: 'COMPRAS',
     rolEspecifico: 'Analista de Compras',
@@ -94,6 +98,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-compras-marcela',
     email: 'marcela.gomez@stfgroup.com',
     nombreUsuario: 'mgomez',
+    password: 'compras123',
     displayName: 'Marcela Gómez',
     role: 'COMPRAS',
     rolEspecifico: 'Responsable de Compras',
@@ -108,6 +113,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-pat-diana',
     email: 'diana.morales@stfgroup.com',
     nombreUsuario: 'dmorales',
+    password: 'patron123',
     displayName: 'Diana Morales',
     role: 'PATRONAJE',
     rolEspecifico: 'Patronista',
@@ -120,6 +126,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-corte-carlos',
     email: 'carlos.restrepo@stfgroup.com',
     nombreUsuario: 'crestrepo',
+    password: 'corte123',
     displayName: 'Carlos Restrepo',
     role: 'CORTE',
     rolEspecifico: 'Supervisor de Corte',
@@ -132,6 +139,7 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     uid: 'usr-soporte-01',
     email: 'soporte.tecnico@stfgroup.com',
     nombreUsuario: 'soporte.tecnico',
+    password: 'soporte123',
     displayName: 'Soporte Técnico STF',
     role: 'SOPORTE_TECNICO',
     rolEspecifico: 'soporte_tecnico',
@@ -266,19 +274,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Si el usuario no existe en absoluto: DENEGAR ACCESO TOTAL
       if (!userFound) {
-        throw new Error(`Acceso denegado: El usuario "${emailOUsername}" no existe ni está creado en el sistema. Contacte al Administrador.`);
+        throw new Error('Credenciales incorrectas: El usuario o contraseña ingresados no son válidos. Acceso denegado.');
       }
 
       // Verificar que el usuario no esté desactivado
       if (userFound.activo === false) {
-        throw new Error(`Acceso denegado: La cuenta del usuario "${userFound.displayName}" está inactiva. Comuníquese con el Administrador para habilitar su acceso.`);
+        throw new Error(`Acceso denegado: La cuenta del usuario "${userFound.displayName}" está inactiva. Comuníquese con el Administrador o Soporte Técnico.`);
       }
 
-      // Si tiene contraseña específica establecida, verificarla
-      if (userFound.password && userFound.password.trim() !== '') {
-        if (password.trim() !== userFound.password.trim()) {
-          throw new Error('Contraseña incorrecta. Por favor verifique sus credenciales de acceso.');
-        }
+      // Obtener la contraseña esperada para este usuario
+      const usernameKey = (userFound.nombreUsuario || userFound.email?.split('@')[0] || '').toLowerCase();
+      const storedLocalPass = 
+        (usernameKey ? localStorage.getItem(`stf_user_pass_${usernameKey}`) : null) ||
+        (userFound.email ? localStorage.getItem(`stf_user_pass_${userFound.email.toLowerCase()}`) : null);
+
+      const defaultRolePass = 
+        userFound.role === 'ADMIN' ? 'admin123' :
+        userFound.role === 'SOPORTE_TECNICO' ? 'soporte123' :
+        userFound.role === 'LABORATORIO' ? 'lab123' :
+        userFound.role === 'COMPRAS' ? 'compras123' :
+        userFound.role === 'PATRONAJE' ? 'patron123' :
+        userFound.role === 'CORTE' ? 'corte123' :
+        userFound.role === 'PROVEEDOR' ? 'prov123' :
+        'stf123';
+
+      const expectedPassword = (userFound.password && userFound.password.trim() !== '') 
+        ? userFound.password.trim() 
+        : (storedLocalPass && storedLocalPass.trim() !== '')
+        ? storedLocalPass.trim()
+        : defaultRolePass;
+
+      // Validación estricta: Si se digita mal el usuario o la contraseña, NO SE DA ACCESO
+      if (password.trim() !== expectedPassword) {
+        throw new Error('Credenciales incorrectas: El usuario o contraseña ingresados no son válidos. Acceso denegado.');
       }
 
       const updatedUser: UserProfile = {
@@ -353,12 +381,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { exito: false, mensaje: 'La nueva contraseña debe tener al menos 4 caracteres.' };
       }
 
-      // Guardar clave en localStorage asociada al usuario
-      localStorage.setItem(`stf_user_pass_${inputLower}`, nuevaPassword.trim());
+      // Validar estrictamente que el usuario existe en el sistema
+      const userFound = usuariosSistema.find(u => 
+        (u.email && u.email.toLowerCase() === inputLower) || 
+        (u.nombreUsuario && u.nombreUsuario.toLowerCase() === inputLower)
+      ) || USUARIOS_INDIVIDUALES_DEFAULT.find(u => 
+        (u.email && u.email.toLowerCase() === inputLower) || 
+        (u.nombreUsuario && u.nombreUsuario.toLowerCase() === inputLower)
+      );
+
+      if (!userFound) {
+        return {
+          exito: false,
+          mensaje: 'El usuario ingresado no existe en el sistema. Recuerde que los usuarios son creados internamente por Administración o Soporte Técnico.'
+        };
+      }
+
+      // Guardar clave en localStorage asociada al usuario y en el perfil
+      const passClean = nuevaPassword.trim();
+      const userFoundNombre = (userFound.nombreUsuario || userFound.email?.split('@')[0] || '').toLowerCase();
+      try {
+        if (userFoundNombre) {
+          localStorage.setItem(`stf_user_pass_${userFoundNombre}`, passClean);
+        }
+        if (userFound.email) {
+          localStorage.setItem(`stf_user_pass_${userFound.email.toLowerCase()}`, passClean);
+        }
+      } catch (e) {}
+
+      // Actualizar el objeto del usuario
+      setUsuariosSistema(prev => {
+        const nextList = prev.map(u => {
+          const uNombre = (u.nombreUsuario || u.email?.split('@')[0] || '').toLowerCase();
+          if (u.uid === userFound.uid || (uNombre && uNombre === userFoundNombre)) {
+            return { ...u, password: passClean };
+          }
+          return u;
+        });
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USERS_LIST_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
 
       return {
         exito: true,
-        mensaje: `¡Contraseña restablecida exitosamente para "${inputLower}"! Ya puedes iniciar sesión.`
+        mensaje: `¡Contraseña restablecida exitosamente para "${userFound.displayName}" (${userFound.nombreUsuario || userFound.email})! Ya puedes iniciar sesión.`
       };
     } catch (e: any) {
       return { exito: false, mensaje: e?.message || 'No se pudo restablecer la contraseña.' };
@@ -446,10 +514,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         areaAsignada: datos.areaAsignada,
         permisos: permisosAuto,
         activo: datos.activo !== undefined ? datos.activo : true,
+        password: datos.password ? datos.password.trim() : undefined,
         createdAt: new Date().toISOString().split('T')[0]
       };
 
-      setUsuariosSistema(prev => [...prev, nuevoUsuario]);
+      if (datos.password && datos.password.trim()) {
+        try {
+          localStorage.setItem(`stf_user_pass_${usernameClean}`, datos.password.trim());
+          if (nuevoUsuario.email) {
+            localStorage.setItem(`stf_user_pass_${nuevoUsuario.email.toLowerCase()}`, datos.password.trim());
+          }
+        } catch (e) {}
+      }
+
+      setUsuariosSistema(prev => {
+        const nextList = [...prev, nuevoUsuario];
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USERS_LIST_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
       return { exito: true, mensaje: `Usuario "${nuevoUsuario.displayName}" (${nuevoUsuario.nombreUsuario}) creado exitosamente.`, usuario: nuevoUsuario };
     } catch (e: any) {
       return { exito: false, mensaje: e?.message || 'Error al crear usuario.' };
@@ -474,7 +558,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ...datos,
               displayName: datos.displayName !== undefined ? datos.displayName.trim() : u.displayName,
               nombreUsuario: datos.nombreUsuario !== undefined ? datos.nombreUsuario.toLowerCase().trim() : u.nombreUsuario,
+              password: datos.password ? datos.password.trim() : u.password
             };
+            if (datos.password) {
+              const uKey = (updated.nombreUsuario || updated.email?.split('@')[0] || '').toLowerCase();
+              try {
+                if (uKey) {
+                  localStorage.setItem(`stf_user_pass_${uKey}`, datos.password.trim());
+                }
+                if (updated.email) {
+                  localStorage.setItem(`stf_user_pass_${updated.email.toLowerCase()}`, datos.password.trim());
+                }
+              } catch (e) {}
+            }
             usuarioActualizado = updated;
             return updated;
           }
