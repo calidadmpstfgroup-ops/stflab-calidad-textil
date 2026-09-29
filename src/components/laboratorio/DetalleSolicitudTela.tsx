@@ -28,9 +28,11 @@ import {
   CheckSquare, 
   Square, 
   Link as LinkIcon,
-  SearchCode
+  SearchCode,
+  Calculator
 } from 'lucide-react';
 import { ReporteCalidadPDFModal } from './ReporteCalidadPDFModal';
+import { CalculadoraLaboratorioModal } from './CalculadoraLaboratorioModal';
 
 interface DetalleSolicitudTelaProps {
   solicitud: SolicitudTelasCompleta;
@@ -216,6 +218,34 @@ export const DetalleSolicitudTela: React.FC<DetalleSolicitudTelaProps> = ({
     tela.observacionesLabRespuesta || tela.evaluacionTecnica?.observacionesRecomendaciones || ''
   );
 
+  // Modal Calculadora Técnica de Laboratorio
+  const [modalCalculadoraAbierto, setModalCalculadoraAbierto] = useState(false);
+
+  const handleAplicarDesdeCalculadora = (valores: {
+    gramaje?: number;
+    pesoLineal?: number;
+    rendimiento?: number;
+    anchoUtil?: number;
+    anchoTotal?: number;
+    encogimientoLargo?: number;
+    encogimientoAncho?: number;
+    viro?: number;
+    elongacionLargo?: number;
+    elongacionAncho?: number;
+  }) => {
+    if (valores.gramaje !== undefined) setGramajeLab(valores.gramaje);
+    if (valores.pesoLineal !== undefined) setPesoLinealLab(valores.pesoLineal);
+    if (valores.rendimiento !== undefined) setRendimientoLab(valores.rendimiento);
+    if (valores.anchoUtil !== undefined) setAnchoUtilLab(valores.anchoUtil);
+    if (valores.anchoTotal !== undefined) setAnchoTotalLab(valores.anchoTotal);
+    if (valores.encogimientoLargo !== undefined) setEncLargoLab(valores.encogimientoLargo);
+    if (valores.encogimientoAncho !== undefined) setEncAnchoLab(valores.encogimientoAncho);
+    if (valores.viro !== undefined) setTorqueViroLab(valores.viro);
+    if (valores.elongacionLargo !== undefined) setElongLargoLab(valores.elongacionLargo);
+    if (valores.elongacionAncho !== undefined) setElongAnchoLab(valores.elongacionAncho);
+    setModalCalculadoraAbierto(false);
+  };
+
   // --- EJECUTAR GUARDADO / ENVÍO ---
   const ejecutarGuardado = (enviarACompras: boolean) => {
     const aNum = (v: number | string) => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
@@ -322,6 +352,17 @@ export const DetalleSolicitudTela: React.FC<DetalleSolicitudTelaProps> = ({
 
         <div className="flex items-center gap-2">
           <Badge tipo="dictamen" valor={dictamenLab} size="md" />
+
+          {/* Botón Calculadora de Laboratorio */}
+          <button
+            type="button"
+            onClick={() => setModalCalculadoraAbierto(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 text-cyan-900 font-black text-xs rounded-xl border border-cyan-300 transition-all shadow-xs cursor-pointer active:scale-95"
+            title="Abrir Calculadora Técnica para calcular masa, rendimiento, encogimiento, etc."
+          >
+            <Calculator className="w-4 h-4 text-cyan-700" />
+            <span>CALCULADORA LAB</span>
+          </button>
 
           <button
             type="button"
@@ -1106,6 +1147,17 @@ export const DetalleSolicitudTela: React.FC<DetalleSolicitudTelaProps> = ({
             }
           }}
           onClose={() => setMostrarReportePDF(false)}
+        />
+      )}
+
+      {/* Modal Calculadora Técnica de Laboratorio Textil */}
+      {modalCalculadoraAbierto && (
+        <CalculadoraLaboratorioModal
+          abierto={modalCalculadoraAbierto}
+          onCerrar={() => setModalCalculadoraAbierto(false)}
+          tabInicial="gramaje"
+          muestraInicialId={tela.id}
+          onAplicarValoresALab={handleAplicarDesdeCalculadora}
         />
       )}
 

@@ -151,5 +151,13 @@ export const GUIA_MAESTRA_INSUMOS: GuiaMaestraInsumoItem[] = [
     parametroCritico: 'Resistencia a la oxidación y alergias.',
     metodoVerificacion: 'Prueba de frote y validación de ficha técnica.',
     criterioAceptacion: 'Color homogéneo; 100% Libre de Níquel y Plomo.'
+  },
+  {
+    id: 'gmi-19',
+    insumo: 'Borlas (Tassels / Flecos trenzados)',
+    categoria: 'Decoración & Pedrería',
+    parametroCritico: 'Desprendimiento de hilos, firmeza del cabezal y largo uniforme.',
+    metodoVerificacion: 'Jalar suavemente los flecos inferiores y revisar el amarre superior.',
+    criterioAceptacion: 'Cero desprendimiento de hilos al tirón; cabezal firme; flecos parejos sin deshilacharse.'
   }
 ];

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile, UserRole, RolUsuarioExt, AreaType, PermissionAction, PermisoSistema, FirmaAuditoriaSesion } from '../types';
+import { esUsuarioAdminOSoporte, registrarEventoAuditoria, cerrarSesionUsuarioActual } from '../services/monitoringService';
 
 export function obtenerFechaHoraActualFormateada() {
   const ahora = new Date();
@@ -20,6 +21,7 @@ interface AuthContextType {
   crearUsuarioSistema: (nuevoUser: Partial<UserProfile>) => Promise<{ exito: boolean; mensaje: string; usuario?: UserProfile }>;
   actualizarEstadoUsuario: (uid: string, activo: boolean) => Promise<void>;
   actualizarUsuarioSistema: (uid: string, datos: Partial<UserProfile>) => Promise<{ exito: boolean; mensaje: string }>;
+  eliminarUsuarioSistema: (uid: string) => Promise<{ exito: boolean; mensaje: string }>;
   obtenerFirmaSesion: () => FirmaAuditoriaSesion;
   tieneAccesoArea: (area: AreaType) => boolean;
   tienePermiso: (accion: PermissionAction, area?: AreaType) => boolean;
@@ -125,15 +127,34 @@ export const USUARIOS_INDIVIDUALES_DEFAULT: UserProfile[] = [
     activo: true,
     createdAt: '2026-01-10',
     permisos: ['VER_SOLICITUDES', 'VER_TRAZABILIDAD']
+  },
+  {
+    uid: 'usr-soporte-01',
+    email: 'soporte.tecnico@stfgroup.com',
+    nombreUsuario: 'soporte.tecnico',
+    displayName: 'Soporte Técnico STF',
+    role: 'SOPORTE_TECNICO',
+    rolEspecifico: 'soporte_tecnico',
+    areaAsignada: 'soporte-tecnico',
+    activo: true,
+    createdAt: '2026-01-01',
+    permisos: [
+      'VER_SOLICITUDES', 'CREAR_SOLICITUD_COMPRAS', 'RECIBIR_SOLICITUD_LAB',
+      'REGISTRAR_RESULTADO_ENSAYO', 'MODIFICAR_RESULTADO_PROPIO', 'MODIFICAR_RESULTADO_OTRO',
+      'EMITIR_DICTAMEN_TECNICO', 'TOMAR_DECISION_COMPRAS', 'GESTIONAR_USUARIOS', 'VER_TRAZABILIDAD',
+      'CENTRO_MONITOREO'
+    ]
   }
 ];
 
-export const USUARIOS_ROLES_DEFAULT: Record<UserRole, UserProfile> = {
+export const USUARIOS_ROLES_DEFAULT: Record<string, UserProfile> = {
   ADMIN: USUARIOS_INDIVIDUALES_DEFAULT[0],
   LABORATORIO: USUARIOS_INDIVIDUALES_DEFAULT[1],
   COMPRAS: USUARIOS_INDIVIDUALES_DEFAULT[3],
   PATRONAJE: USUARIOS_INDIVIDUALES_DEFAULT[5],
   CORTE: USUARIOS_INDIVIDUALES_DEFAULT[6],
+  SOPORTE_TECNICO: USUARIOS_INDIVIDUALES_DEFAULT[7],
+  soporte_tecnico: USUARIOS_INDIVIDUALES_DEFAULT[7],
   PROVEEDOR: {
     uid: 'usr-prov-01',
     email: 'proveedor@stfgroup.com',
@@ -229,58 +250,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Por favor ingrese su Contraseña de acceso.');
       }
 
+      // Buscar estrictamente si el usuario existe en el sistema
       let userFound = usuariosSistema.find(u => 
-        u.email.toLowerCase() === inputLower || 
+        (u.email && u.email.toLowerCase() === inputLower) || 
         (u.nombreUsuario && u.nombreUsuario.toLowerCase() === inputLower)
       );
 
-      // Si no se encontró en la lista activa de usuarios del sistema, buscar en defaults
+      // Si no se encuentra en la lista activa, verificar si coincide con usuario predeterminado de respaldo
       if (!userFound) {
         userFound = USUARIOS_INDIVIDUALES_DEFAULT.find(u => 
-          u.email.toLowerCase() === inputLower || 
+          (u.email && u.email.toLowerCase() === inputLower) || 
           (u.nombreUsuario && u.nombreUsuario.toLowerCase() === inputLower)
         );
       }
 
-      // Determinar el rol si fue pasado como 3er argumento o derivado
-      const targetRole = role || (password && ['ADMIN', 'LABORATORIO', 'COMPRAS', 'PATRONAJE', 'CORTE', 'PROVEEDOR', 'SUPERVISOR'].includes(password.toUpperCase()) ? (password.toUpperCase() as UserRole) : undefined);
-
-      if (!userFound && targetRole) {
-        userFound = USUARIOS_ROLES_DEFAULT[targetRole];
+      // Si el usuario no existe en absoluto: DENEGAR ACCESO TOTAL
+      if (!userFound) {
+        throw new Error(`Acceso denegado: El usuario "${emailOUsername}" no existe ni está creado en el sistema. Contacte al Administrador.`);
       }
 
-      // Si aún no se encuentra por email o usuario, deducir por palabra clave o crear usuario genérico de área
-      if (!userFound) {
-        if (inputLower.includes('lab')) userFound = USUARIOS_ROLES_DEFAULT.LABORATORIO;
-        else if (inputLower.includes('compras')) userFound = USUARIOS_ROLES_DEFAULT.COMPRAS;
-        else if (inputLower.includes('patron')) userFound = USUARIOS_ROLES_DEFAULT.PATRONAJE;
-        else if (inputLower.includes('corte')) userFound = USUARIOS_ROLES_DEFAULT.CORTE;
-        else if (inputLower.includes('prov')) userFound = USUARIOS_ROLES_DEFAULT.PROVEEDOR;
-        else {
-          userFound = {
-            uid: `usr-custom-${Date.now()}`,
-            email: `${inputLower}@stfgroup.com`,
-            nombreUsuario: inputLower,
-            displayName: emailOUsername.trim(),
-            role: 'LABORATORIO',
-            rolEspecifico: 'Analista de Calidad',
-            areaAsignada: 'laboratorio',
-            activo: true,
-            createdAt: new Date().toISOString().split('T')[0]
-          };
+      // Verificar que el usuario no esté desactivado
+      if (userFound.activo === false) {
+        throw new Error(`Acceso denegado: La cuenta del usuario "${userFound.displayName}" está inactiva. Comuníquese con el Administrador para habilitar su acceso.`);
+      }
+
+      // Si tiene contraseña específica establecida, verificarla
+      if (userFound.password && userFound.password.trim() !== '') {
+        if (password.trim() !== userFound.password.trim()) {
+          throw new Error('Contraseña incorrecta. Por favor verifique sus credenciales de acceso.');
         }
       }
 
-      if (!userFound.activo) {
-        userFound = { ...userFound, activo: true };
-      }
-
-      const updatedUser = {
+      const updatedUser: UserProfile = {
         ...userFound,
         lastLogin: new Date().toISOString()
       };
 
       setUsuario(updatedUser);
+      
+      // Guardar sesión activa inmediatamente en localStorage
+      try {
+        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(updatedUser));
+      } catch (e) {}
+
+      // Actualizar timestamp de login en la lista de usuarios
+      setUsuariosSistema(prev => {
+        const nextList = prev.map(u => u.uid === updatedUser.uid ? updatedUser : u);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USERS_LIST_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
       
       // Guardar también la sesión activa en localStorage
       try {
@@ -295,6 +315,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         return [...prev, updatedUser];
       });
+
+      // Registrar auditoría de inicio de sesión
+      registrarEventoAuditoria({
+        action: 'Inicio de sesión',
+        tipoAccion: 'LOGIN',
+        user: updatedUser.nombreUsuario || updatedUser.email,
+        userId: updatedUser.uid,
+        nombreCompleto: updatedUser.displayName,
+        area: updatedUser.areaAsignada,
+        modulo: 'Autenticación',
+        userRole: updatedUser.role,
+        rolEspecifico: updatedUser.rolEspecifico || String(updatedUser.role),
+        registroAfectado: 'Sesión de Usuario',
+        idRegistro: `SES-${Date.now().toString().slice(-5)}`,
+        resultado: 'Exitoso',
+        detalles: `Inicio de sesión exitoso como ${updatedUser.displayName} (${updatedUser.rolEspecifico || updatedUser.role}).`
+      }).catch(() => {});
 
     } catch (err: any) {
       const msg = err?.message || 'Error al iniciar sesión. Verifique usuario y contraseña.';
@@ -329,6 +366,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const cerrarSesion = () => {
+    if (usuario) {
+      cerrarSesionUsuarioActual(usuario);
+      registrarEventoAuditoria({
+        action: 'Cierre de sesión',
+        tipoAccion: 'LOGOUT',
+        user: usuario.nombreUsuario || usuario.email,
+        userId: usuario.uid,
+        nombreCompleto: usuario.displayName,
+        area: usuario.areaAsignada,
+        modulo: 'Autenticación',
+        userRole: usuario.role,
+        rolEspecifico: usuario.rolEspecifico || String(usuario.role),
+        registroAfectado: 'Sesión de Usuario',
+        resultado: 'Exitoso',
+        detalles: `Cierre de sesión voluntario de ${usuario.displayName}.`
+      }).catch(() => {});
+    }
     setUsuario(null);
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
   };
@@ -411,24 +465,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const actualizarUsuarioSistema = async (uid: string, datos: Partial<UserProfile>): Promise<{ exito: boolean; mensaje: string }> => {
     try {
-      setUsuariosSistema(prev => prev.map(u => {
-        if (u.uid === uid) {
-          const updated: UserProfile = {
-            ...u,
-            ...datos,
-            displayName: datos.displayName !== undefined ? datos.displayName.trim() : u.displayName,
-            nombreUsuario: datos.nombreUsuario !== undefined ? datos.nombreUsuario.toLowerCase().trim() : u.nombreUsuario,
-          };
-          if (usuario && usuario.uid === uid) {
-            setUsuario(updated);
+      let usuarioActualizado: UserProfile | null = null;
+      setUsuariosSistema(prev => {
+        const nextList = prev.map(u => {
+          if (u.uid === uid) {
+            const updated: UserProfile = {
+              ...u,
+              ...datos,
+              displayName: datos.displayName !== undefined ? datos.displayName.trim() : u.displayName,
+              nombreUsuario: datos.nombreUsuario !== undefined ? datos.nombreUsuario.toLowerCase().trim() : u.nombreUsuario,
+            };
+            usuarioActualizado = updated;
+            return updated;
           }
-          return updated;
-        }
-        return u;
-      }));
-      return { exito: true, mensaje: 'Datos de usuario y rol actualizados correctamente.' };
+          return u;
+        });
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USERS_LIST_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
+
+      if (usuario && usuario.uid === uid && usuarioActualizado) {
+        setUsuario(usuarioActualizado);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(usuarioActualizado));
+        } catch (e) {}
+      }
+
+      return { exito: true, mensaje: 'Datos de usuario y rol guardados y actualizados correctamente.' };
     } catch (e: any) {
       return { exito: false, mensaje: e?.message || 'Error al actualizar usuario.' };
+    }
+  };
+
+  const eliminarUsuarioSistema = async (uid: string): Promise<{ exito: boolean; mensaje: string }> => {
+    try {
+      if (usuario && usuario.uid === uid) {
+        return { exito: false, mensaje: 'No puedes eliminar tu propio usuario mientras tienes la sesión activa.' };
+      }
+      setUsuariosSistema(prev => prev.filter(u => u.uid !== uid));
+      return { exito: true, mensaje: 'Usuario eliminado del sistema correctamente.' };
+    } catch (e: any) {
+      return { exito: false, mensaje: e?.message || 'Error al eliminar usuario.' };
     }
   };
 
@@ -450,7 +529,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const tieneAccesoArea = (area: AreaType): boolean => {
     if (!usuario) return false;
-    if (usuario.role === 'ADMIN' || usuario.role === 'SUPERVISOR') return true;
+
+    // Administradores y Soporte Técnico tienen acceso universal a todos los módulos
+    const esAdminOSoporte = esUsuarioAdminOSoporte(usuario);
+    if (esAdminOSoporte) return true;
+
+    // Bloqueo estricto: Usuarios normales NO pueden ver ni acceder a Soporte Técnico / Monitoreo
+    if (area === 'soporte-tecnico') return false;
+
     if (area === 'dashboard') return true;
 
     switch (usuario.role) {
@@ -471,20 +557,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const tienePermisoSistema = (permiso: PermisoSistema): boolean => {
     if (!usuario) return false;
-    if (usuario.role === 'ADMIN') return true;
+    if (esUsuarioAdminOSoporte(usuario)) return true;
     return usuario.permisos ? usuario.permisos.includes(permiso) : false;
   };
 
   const tienePermiso = (accion: PermissionAction, area?: AreaType): boolean => {
     if (!usuario) return false;
-    if (usuario.role === 'ADMIN') return true;
+    if (esUsuarioAdminOSoporte(usuario)) return true;
 
     if (accion === 'VER') {
       return area ? tieneAccesoArea(area) : true;
     }
 
     if (accion === 'ELIMINAR' || accion === 'ADMINISTRAR') {
-      return (usuario.role as string) === 'ADMIN';
+      return esUsuarioAdminOSoporte(usuario);
     }
 
     if (accion === 'APROBAR' || accion === 'RECHAZAR') {
@@ -509,6 +595,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         crearUsuarioSistema,
         actualizarEstadoUsuario,
         actualizarUsuarioSistema,
+        eliminarUsuarioSistema,
         obtenerFirmaSesion,
         tieneAccesoArea,
         tienePermiso,

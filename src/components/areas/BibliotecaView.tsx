@@ -24,6 +24,8 @@ import {
   Paperclip
 } from 'lucide-react';
 import { ExploradorFichasModal } from '../fichas-tecnicas/ExploradorFichasModal';
+import { exportarFichaAWord, exportarFichaAPDF } from '../../utils/fichaTecnicaFormatters';
+import { FichaTecnicaFormatoCompletoModal } from '../fichas-tecnicas/FichaTecnicaFormatoCompletoModal';
 
 export const BibliotecaView: React.FC = () => {
   const { fichasTecnicasHistorial, guardarFichaTecnicaProveedor } = useQuality();
@@ -33,6 +35,7 @@ export const BibliotecaView: React.FC = () => {
   const [showToast, setShowToast] = useState<string | null>(null);
 
   const [isModalExploradorOpen, setIsModalExploradorOpen] = useState<boolean>(false);
+  const [isModalFormatoCompletoOpen, setIsModalFormatoCompletoOpen] = useState<boolean>(false);
 
   // Filtrado de Fichas Técnicas
   const filteredFichas = (fichasTecnicasHistorial || []).filter(f => 
@@ -189,10 +192,11 @@ OBSERVACIONES DEL FABRICANTE:
           <button
             type="button"
             onClick={() => setIsModalExploradorOpen(true)}
-            className="bg-[#485C3E] hover:bg-[#5A734E] text-[#FBF8F2] px-3.5 py-2 rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
+            className="bg-[#485C3E] hover:bg-[#5A734E] text-white px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center space-x-2 shadow-md transition-all cursor-pointer border border-[#94A786]/60"
+            title="Abrir Explorador Base Histórica de Fichas Técnicas"
           >
-            <BookOpen className="h-4 w-4" />
-            <span>Explorador Base FT</span>
+            <BookOpen className="h-4 w-4 text-white" />
+            <span className="text-white">Explorador Base FT</span>
           </button>
         </div>
       </div>
@@ -223,11 +227,32 @@ OBSERVACIONES DEL FABRICANTE:
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleDownloadPDF}
-                className="bg-[#2B2B2E] hover:bg-[#424246] text-[#FBF8F2] font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 border border-[#424246] shadow-sm cursor-pointer"
+                onClick={() => setIsModalFormatoCompletoOpen(true)}
+                className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
+                title="Ver formato oficial completo de STF GROUP"
               >
-                <Download className="h-4 w-4 text-[#C6A466]" />
-                <span>Descargar TXT</span>
+                <Eye className="h-4 w-4 text-amber-300" />
+                <span>Formato STF GROUP</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => exportarFichaAWord(currentFicha, currentVersion)}
+                className="bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-500/40 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
+                title="Descargar documento Microsoft Word (.doc)"
+              >
+                <Download className="h-4 w-4 text-blue-400" />
+                <span>Exportar Word</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => exportarFichaAPDF(currentFicha, currentVersion)}
+                className="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-500/40 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center space-x-1.5 shadow-sm cursor-pointer"
+                title="Generar o imprimir PDF oficial de alta resolución"
+              >
+                <FileText className="h-4 w-4 text-rose-400" />
+                <span>Exportar PDF</span>
               </button>
 
               <button
@@ -391,6 +416,15 @@ OBSERVACIONES DEL FABRICANTE:
         abierto={isModalExploradorOpen}
         onCerrar={() => setIsModalExploradorOpen(false)}
       />
+
+      {/* Modal de Formato Completo STF GROUP */}
+      {isModalFormatoCompletoOpen && currentFicha && (
+        <FichaTecnicaFormatoCompletoModal
+          ficha={currentFicha}
+          version={currentVersion}
+          onCerrar={() => setIsModalFormatoCompletoOpen(false)}
+        />
+      )}
 
     </div>
   );

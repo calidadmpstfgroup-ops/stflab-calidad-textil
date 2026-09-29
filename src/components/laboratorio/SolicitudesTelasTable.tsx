@@ -16,8 +16,10 @@ import {
   XCircle,
   ShieldCheck,
   Send,
-  Layers
+  Layers,
+  Trash2
 } from 'lucide-react';
+import { useQuality } from '../../context/QualityContext';
 import { generateCertificateHTML } from '../../utils/certificateGenerator';
 
 interface SolicitudesTelasTableProps {
@@ -33,6 +35,7 @@ export const SolicitudesTelasTable: React.FC<SolicitudesTelasTableProps> = ({
   telaSeleccionadaId,
   consultarFichaHistorica
 }) => {
+  const { eliminarSolicitudTelas } = useQuality();
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('TODOS');
   
@@ -288,14 +291,30 @@ export const SolicitudesTelasTable: React.FC<SolicitudesTelasTableProps> = ({
 
                     <td className="py-3.5 px-3 text-center">
                       {subTab === 'solicitudes' ? (
-                        <button
-                          type="button"
-                          onClick={() => onSeleccionarTela(solicitud, tela)}
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 mx-auto cursor-pointer active:scale-95"
-                        >
-                          <FlaskConical className="w-3.5 h-3.5" />
-                          <span>EVALUAR MUESTRA</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onSeleccionarTela(solicitud, tela)}
+                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          >
+                            <FlaskConical className="w-3.5 h-3.5" />
+                            <span>EVALUAR MUESTRA</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`¿Enviar la solicitud de telas ${solicitud.numeroSolicitud} a la papelera de reciclaje?`)) {
+                                eliminarSolicitudTelas(solicitud.id, 'laboratorio');
+                              }
+                            }}
+                            title="Eliminar solicitud (enviar a papelera)"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-500" />
+                          </button>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -314,6 +333,20 @@ export const SolicitudesTelasTable: React.FC<SolicitudesTelasTableProps> = ({
                             className="p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg border border-emerald-300 transition-all cursor-pointer"
                           >
                             <FileSpreadsheet className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`¿Enviar la solicitud de telas ${solicitud.numeroSolicitud} a la papelera de reciclaje?`)) {
+                                eliminarSolicitudTelas(solicitud.id, 'laboratorio');
+                              }
+                            }}
+                            title="Eliminar solicitud (enviar a papelera)"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-500" />
                           </button>
                         </div>
                       )}

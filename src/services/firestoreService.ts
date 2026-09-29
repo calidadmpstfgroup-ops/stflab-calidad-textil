@@ -112,6 +112,39 @@ export const registrarLogAuditoria = async (
     console.warn('Registro de auditoría guardado localmente:', logEntry.id);
   }
 
+  // 3. Sincronizar la sesión en vivo del usuario en el Centro de Monitoreo
+  try {
+    const rawSes = localStorage.getItem('stflab_sesiones_monitoreo_v1');
+    if (rawSes) {
+      const sesiones = JSON.parse(rawSes);
+      if (Array.isArray(sesiones)) {
+        const uId = metaSesion?.userId || user;
+        const idx = sesiones.findIndex((s: any) => s.userId === uId || (s.email && s.email.toLowerCase() === user.toLowerCase()));
+        if (idx >= 0) {
+          sesiones[idx].ultimaActividad = ahora.toISOString();
+          sesiones[idx].ultimaActividadRelativa = 'Hace 1 s';
+          sesiones[idx].moduloActual = metaSesion?.area || collectionName || sesiones[idx].moduloActual;
+          sesiones[idx].accionRealizada = action;
+          sesiones[idx].estado = 'CONECTADO';
+          if (!sesiones[idx].historialAcciones) sesiones[idx].historialAcciones = [];
+          sesiones[idx].historialAcciones.push({
+            id: `h-${Date.now()}`,
+            hora,
+            modulo: metaSesion?.area || collectionName || 'General',
+            accion: action,
+            resultado: 'Exitoso',
+            idRegistro: documentId,
+            campoAfectado: metaSesion?.campoAfectado,
+            previousValue,
+            newValue,
+            detalles
+          });
+          localStorage.setItem('stflab_sesiones_monitoreo_v1', JSON.stringify(sesiones));
+        }
+      }
+    }
+  } catch (err) {}
+
   return logEntry;
 };
 

@@ -129,14 +129,14 @@ export const PatronajeView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-[#FBF8F2] tracking-tight font-sans">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-sans">
                 {t('4. Moldería & Patronaje', '4. Patternmaking & Grading')}
               </h2>
-              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#C6A466]/15 text-[#C6A466] border border-[#C6A466]/30 font-mono tracking-wider">
+              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#00b4d8]/15 text-[#008db0] dark:text-[#38bdf8] border border-[#00b4d8]/30 font-mono tracking-wider">
                 {t('FASE DE ESCALADO Y TRAZO', 'GRADING & DRAFTING PHASE')}
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-[#A8A095] mt-1 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium leading-relaxed">
               {t('Ajuste proporcional de patrones y cálculo de factores de escala para Optitex, Gerber, Lectra y Audaces.', 'Proportional pattern adjustment and scale factor calculation for Optitex, Gerber, Lectra & Audaces.')}
             </p>
           </div>
@@ -370,6 +370,14 @@ export const PatronajeView: React.FC = () => {
         abierto={modalCalculadoraAbierto}
         onCerrar={() => setModalCalculadoraAbierto(false)}
         muestraInicialId={muestraSeleccionadaId}
+        onAplicarValoresAPatronaje={(valores) => {
+          setHolguraAdicionalCm(valores.holguraSugerida);
+          setObservacionPatronaje(valores.observacionCad);
+          if (valores.factorX !== 1.0 || valores.factorY !== 1.0) {
+            setDictamenPatronaje('HALLAZGO');
+          }
+          setModalCalculadoraAbierto(false);
+        }}
       />
 
     </div>

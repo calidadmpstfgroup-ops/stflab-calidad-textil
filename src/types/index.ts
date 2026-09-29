@@ -11,7 +11,8 @@ export type AreaType =
   | 'chat'
   | 'configuracion'
   | 'indicadores'
-  | 'documentos';
+  | 'documentos'
+  | 'soporte-tecnico';
 
 export type DictamenType = 'APROBADO' | 'HALLAZGO' | 'RECHAZADO' | 'EN_PROCESO' | 'PENDIENTE';
 
@@ -678,7 +679,9 @@ export type UserRole =
   | 'PATRONAJE'
   | 'CORTE'
   | 'PROVEEDOR'
-  | 'SUPERVISOR';
+  | 'SUPERVISOR'
+  | 'SOPORTE_TECNICO'
+  | 'soporte_tecnico';
 
 export type RolUsuarioExt = 
   | 'ADMINISTRADOR'
@@ -688,6 +691,8 @@ export type RolUsuarioExt =
   | 'ANALISTA_COMPRAS'
   | 'PATRONISTA'
   | 'SUPERVISOR_CORTE'
+  | 'SOPORTE_TECNICO'
+  | 'soporte_tecnico'
   | 'CONSULTA';
 
 export type PermisoSistema = 
@@ -700,7 +705,8 @@ export type PermisoSistema =
   | 'EMITIR_DICTAMEN_TECNICO'
   | 'TOMAR_DECISION_COMPRAS'
   | 'GESTIONAR_USUARIOS'
-  | 'VER_TRAZABILIDAD';
+  | 'VER_TRAZABILIDAD'
+  | 'CENTRO_MONITOREO';
 
 export type PermissionAction = 
   | 'VER'
@@ -743,7 +749,7 @@ export interface FirmaAuditoriaSesion {
 }
 
 // =========================================================================
-// --- 📜 AUDITORÍA & TRAZABILIDAD INMUTABLE                             ---
+// --- 📜 AUDITORÍA & TRAZABILIDAD INMUTABLE (CENTRO DE MONITOREO)       ---
 // =========================================================================
 export interface AuditMetadata {
   createdAt: string;
@@ -752,24 +758,112 @@ export interface AuditMetadata {
   updatedBy: string;
 }
 
+export type TipoAccionAuditoria = 
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'CONSULTA'
+  | 'CREACION'
+  | 'EDICION'
+  | 'ELIMINACION'
+  | 'DESCARGA'
+  | 'CARGA_ARCHIVO'
+  | 'CAMBIO_ESTADO'
+  | 'REGISTRO_RESULTADO'
+  | 'MODIFICACION'
+  | 'ENVIO_SOLICITUD'
+  | 'RESPUESTA_SOLICITUD'
+  | 'ERROR'
+  | 'APROBACION'
+  | 'RECHAZO'
+  | 'NAVEGACION';
+
+export type ResultadoAuditoria = 'Exitoso' | 'Error' | 'Advertencia' | 'En revisión' | 'Crítico';
+
 export interface AuditLogEntry {
-  id: string;
-  collectionName: string;
-  documentId: string;
-  action: 'CREAR' | 'EDITAR' | 'APROBAR' | 'RECHAZAR' | 'CAMBIO_ESTADO' | 'SUBIR_DOCUMENTO' | 'ELIMINAR' | 'RECIBIR' | 'REGISTRAR_ENSAYO' | 'DICTAMEN_TECNICO' | 'DECISION_FINAL';
-  user: string;
-  userId?: string;
+  id: string; // ID del evento
+  collectionName?: string;
+  documentId?: string;
+  action: string; // Acción legible e.g. "Registró ensayo", "Creó solicitud"
+  tipoAccion?: TipoAccionAuditoria;
+  user: string; // Nombre usuario / email
+  userId?: string; // ID del usuario
   nombreCompleto?: string;
-  area?: AreaType;
+  area?: AreaType | string;
+  modulo?: string; // Módulo ej: "Ensayos", "Solicitudes de Compras", "Fichas Técnicas"
   userRole: UserRole;
   rolEspecifico?: string;
   timestamp: string;
   fecha?: string;
   hora?: string;
-  previousValue?: any;
-  newValue?: any;
+  registroAfectado?: string; // Nombre/descripción del registro afectado
+  idRegistro?: string; // Código/ID del registro ej: "ENS-002541", "SC-00152"
+  campoAfectado?: string; // Campo modificado
+  previousValue?: any; // Valor anterior
+  newValue?: any; // Valor nuevo
+  resultado?: ResultadoAuditoria | string; // Exitoso | Error
+  mensajeError?: string; // Mensaje de error si aplica
+  dispositivo?: string; // ej: "Chrome - Windows"
   detalles?: string;
-  campoAfectado?: string;
+}
+
+export interface SesionUsuarioMonitoreo {
+  id: string; // ID sesión
+  userId: string;
+  nombreCompleto: string;
+  email?: string;
+  avatar?: string;
+  area: AreaType | string;
+  rol: string;
+  rolEspecifico: string;
+  estado: 'CONECTADO' | 'INACTIVO' | 'DESCONECTADO'; // 🟢, 🟡, 🔴
+  horaEntrada: string; // ej: "07:58"
+  horaEntradaCompleta: string; // ej: "07:58:12"
+  ultimaActividad: string; // ISO
+  ultimaActividadRelativa: string; // "Hace 10 s", "Hace 6 min"
+  moduloActual: string; // ej: "Ensayos"
+  accionRealizada: string; // OBLIGATORIA ej: "Registró ensayo"
+  dispositivo: string;
+  ip?: string;
+  duracionMinutos?: number;
+  historialAcciones: Array<{
+    id: string;
+    hora: string;
+    modulo: string;
+    accion: string;
+    detalles?: string;
+    resultado: 'Exitoso' | 'Error';
+    idRegistro?: string;
+    campoAfectado?: string;
+    previousValue?: any;
+    newValue?: any;
+  }>;
+}
+
+export interface EventoErrorMonitoreo {
+  id: string;
+  hora: string;
+  fecha: string;
+  usuario: string;
+  userId?: string;
+  modulo: string;
+  accion: string;
+  error: string;
+  estado: 'CRITICO' | 'EN_REVISION' | 'RESUELTO';
+  dispositivo?: string;
+  idRegistro?: string;
+}
+
+export interface KpisCentroMonitoreo {
+  usuariosConectados: number;
+  usuariosActivosHoy: number;
+  modulosEnUso: number;
+  alertasErrores: number;
+  sesionesActivas: number;
+  totalSesionesDia: number;
+  moduloMasUtilizado: string;
+  erroresDelDia: number;
+  actividadesRegistradas: number;
+  tiempoPromedioSesionMin: number;
 }
 
 // =========================================================================
@@ -1427,6 +1521,22 @@ export interface EvaluacionForrosCosturas {
   
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ItemPapelera {
+  id: string;
+  tipo: 'tela' | 'accesorio';
+  solicitudOriginalId: string;
+  numeroSolicitud: string;
+  fechaSolicitud: string;
+  solicitante: string;
+  proveedor?: string;
+  cantidadItems: number;
+  eliminadoPor: string;
+  areaEliminacion: 'compras' | 'laboratorio' | 'admin';
+  fechaEliminacion: string;
+  motivo?: string;
+  datosCompletos: SolicitudTelasCompleta | SolicitudAccesoriosCompleta;
 }
 
 

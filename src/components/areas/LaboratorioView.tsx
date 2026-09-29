@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuality } from '../../context/QualityContext';
 import { SolicitudTelasCompleta, ItemMuestraTela, FichaTecnicaHistoricaVersionada, VersionFichaTecnica } from '../../types';
 
@@ -9,6 +9,7 @@ import { BuscarFichaLaboratorioModal } from '../laboratorio/BuscarFichaLaborator
 import { LaboratorioAccesorios } from '../laboratorio/LaboratorioAccesorios';
 import { HistorialLaboratorio } from '../laboratorio/HistorialLaboratorio';
 import { EvaluacionForrosCosturasView } from '../laboratorio/EvaluacionForrosCosturasView';
+import { CalculadoraLaboratorioModal } from '../laboratorio/CalculadoraLaboratorioModal';
 
 import { Sparkles, Bot } from 'lucide-react';
 
@@ -21,11 +22,19 @@ export const LaboratorioView: React.FC = () => {
     actualizarItemAccesorioLab,
     responderSolicitudAccesorios,
     fichasTecnicasHistorial,
-    consultarFichaTecnicaHistorica
+    consultarFichaTecnicaHistorica,
+    subseccionLaboratorio,
+    setSubseccionLaboratorio,
+    pendientesLabTelas,
+    pendientesLabInsumos
   } = useQuality();
 
-  // Pestaña activa principal: Telas | Accesorios | Forros & Costuras | Historial
-  const [tabActiva, setTabActiva] = useState<'telas' | 'accesorios' | 'forros-costuras' | 'historial'>('telas');
+  // Pestaña activa principal: Telas | Accesorios | Forros & Costuras | Historial (sincronizada con QualityContext)
+  const tabActiva = subseccionLaboratorio || 'telas';
+  const setTabActiva = (tab: 'telas' | 'accesorios' | 'forros-costuras' | 'historial') => {
+    setSubseccionLaboratorio(tab);
+    setTelaSeleccionada(null);
+  };
 
   // Muestra de tela seleccionada para ver detalle y evaluar
   const [telaSeleccionada, setTelaSeleccionada] = useState<{
@@ -41,6 +50,16 @@ export const LaboratorioView: React.FC = () => {
 
   // Modal de búsqueda de Ficha Técnica
   const [modalBuscarFichaAbierto, setModalBuscarFichaAbierto] = useState(false);
+
+  // Modal de Calculadora Técnica de Laboratorio
+  const [modalCalculadoraAbierto, setModalCalculadoraAbierto] = useState(false);
+
+  // Event listener global para abrir la calculadora desde cualquier parte
+  useEffect(() => {
+    const handleAbrirCalc = () => setModalCalculadoraAbierto(true);
+    window.addEventListener('abrir-calculadora-lab', handleAbrirCalc);
+    return () => window.removeEventListener('abrir-calculadora-lab', handleAbrirCalc);
+  }, []);
 
   // Toast Notif
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -144,7 +163,50 @@ export const LaboratorioView: React.FC = () => {
         }}
         stats={stats}
         dictamenActual={telaSeleccionada?.tela.dictamen || 'APROBADA'}
+        onAbrirCalculadora={() => setModalCalculadoraAbierto(true)}
       />
+
+      {/* Banner de Notificación Animada: Solicitudes de Compras - Telas */}
+      {tabActiva === 'telas' && pendientesLabTelas > 0 && !telaSeleccionada && (
+        <div className="bg-gradient-to-r from-blue-900/90 via-slate-900/95 to-slate-900 border border-blue-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3 text-white animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+            </span>
+            <div>
+              <p className="text-xs font-bold text-blue-200">
+                🧵 Notificación Compras - Telas: <span className="text-white font-extrabold">{pendientesLabTelas} telas pendientes de ensayo técnico</span> enviadas por Compras.
+              </p>
+              <p className="text-[11px] text-slate-300">Selecciona una tela para vincular ficha técnica y emitir dictamen.</p>
+            </div>
+          </div>
+          <span className="bg-blue-600/30 text-blue-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-blue-500/30 shrink-0">
+            {pendientesLabTelas} PENDIENTES
+          </span>
+        </div>
+      )}
+
+      {/* Banner de Notificación Animada: Solicitudes de Compras - Insumos */}
+      {tabActiva === 'accesorios' && pendientesLabInsumos > 0 && (
+        <div className="bg-gradient-to-r from-amber-950/90 via-slate-900/95 to-slate-900 border border-amber-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3 text-white animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
+            <div>
+              <p className="text-xs font-bold text-amber-200">
+                🔩 Notificación Compras - Insumos: <span className="text-white font-extrabold">{pendientesLabInsumos} insumos pendientes de evaluación</span> enviados por Compras.
+              </p>
+              <p className="text-[11px] text-slate-300">Evalúa los parámetros técnicos y dictamen en la bandeja de insumos.</p>
+            </div>
+          </div>
+          <span className="bg-amber-600/30 text-amber-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-amber-500/30 shrink-0">
+            {pendientesLabInsumos} PENDIENTES
+          </span>
+        </div>
+      )}
 
       {/* 2. Sección Telas */}
       {tabActiva === 'telas' && (
@@ -226,6 +288,14 @@ export const LaboratorioView: React.FC = () => {
           setModalBuscarFichaAbierto(false);
           showToast('Redirigiendo a creación de nueva Ficha Técnica.');
         }}
+      />
+
+      {/* Modal Calculadora Técnica de Laboratorio Textil */}
+      <CalculadoraLaboratorioModal
+        abierto={modalCalculadoraAbierto}
+        onCerrar={() => setModalCalculadoraAbierto(false)}
+        muestraInicialId={telaSeleccionada?.tela.id}
+        tabInicial="gramaje"
       />
 
     </div>

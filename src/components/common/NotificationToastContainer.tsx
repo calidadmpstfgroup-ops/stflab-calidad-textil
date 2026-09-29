@@ -23,13 +23,14 @@ export interface NotificacionItem {
   titulo: string;
   mensaje: string;
   areaDestino?: AreaType;
+  subseccion?: string; // ej: 'telas' | 'accesorios'
   accionLabel?: string;
   tiempo?: string;
   leido?: boolean;
 }
 
 export const NotificationToastContainer: React.FC = () => {
-  const { notificacionesActivas, eliminarNotificacion, setAreaActual } = useQuality() as any;
+  const { notificacionesActivas, eliminarNotificacion, setAreaActual, navegarA } = useQuality() as any;
   const [sonidoActivo, setSonidoActivo] = useState(true);
 
   const toggleSonido = () => {
@@ -152,13 +153,17 @@ export const NotificationToastContainer: React.FC = () => {
                   <div className="mt-2.5 flex items-center justify-end">
                     <button
                       onClick={() => {
-                        setAreaActual(notif.areaDestino);
+                        if (navegarA) {
+                          navegarA(notif.areaDestino!, notif.subseccion);
+                        } else {
+                          setAreaActual(notif.areaDestino!);
+                        }
                         eliminarNotificacion(notif.id);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-black shadow transition-all flex items-center gap-1.5 active:scale-95 ${estiloPorTipo.btnColor}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black shadow transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer text-white ${estiloPorTipo.btnColor}`}
                     >
-                      <span>{notif.accionLabel || `Ir a ${notif.areaDestino.toUpperCase()}`}</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <span className="text-white font-bold">{notif.accionLabel || `Ir a ${notif.areaDestino.toUpperCase()}`}</span>
+                      <ArrowRight className="w-3 h-3 text-white" />
                     </button>
                   </div>
                 )}

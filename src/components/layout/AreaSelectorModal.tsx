@@ -16,8 +16,10 @@ import {
   BookOpen,
   MessageSquare,
   BarChart3,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
+import { esUsuarioAdminOSoporte } from '../../services/monitoringService';
 
 export const AreaSelectorModal: React.FC = () => {
   const { 
@@ -136,6 +138,19 @@ export const AreaSelectorModal: React.FC = () => {
       stats: 'PDF & Excel',
       highlight: 'Formato Oficial',
     },
+    ...(esUsuarioAdminOSoporte(usuario) ? [{
+      id: 'soporte-tecnico' as AreaType,
+      numero: '9',
+      nombre: '9. Centro de Monitoreo',
+      subtitulo: 'Supervisión en Vivo, Sesiones y Auditoría de STFLAB',
+      icono: <Activity className="w-8 h-8 text-cyan-400" />,
+      bgGradient: 'from-cyan-500/10 via-cyan-600/5 to-slate-900',
+      borderColor: 'border-cyan-500/30 hover:border-cyan-400',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300',
+      descripcion: 'Módulo de supervisión exclusivo para Soporte Técnico y Administradores. Monitoreo de usuarios conectados, módulos en uso, actividad reciente y trazabilidad histórica.',
+      stats: 'EN VIVO',
+      highlight: 'Auditoría & Diagnóstico',
+    }] : []),
   ];
 
   const handleSeleccionarArea = (id: AreaType) => {

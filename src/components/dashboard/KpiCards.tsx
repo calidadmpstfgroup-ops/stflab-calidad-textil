@@ -1,97 +1,111 @@
 import React from 'react';
 import { useQuality } from '../../context/QualityContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { 
+  Folder, 
+  FlaskConical, 
+  FileCheck, 
+  ShieldCheck, 
+  XCircle,
+  ChevronRight 
+} from 'lucide-react';
 
 export const KpiCards: React.FC = () => {
-  const { kpis, muestras, setFiltros } = useQuality();
+  const { muestras, totalComprasTelas, pendientesLabTotal, setFiltros, navegarA, setAreaActual } = useQuality();
   const { t } = useLanguage();
 
   const totalMuestras = muestras.length;
-  const proveedoresUnicos = new Set(muestras.map(m => m.proveedor).filter(Boolean)).size;
   const muestrasAprobadas = muestras.filter(m => m.dictamenFinal === 'APROBADO').length;
-  const tasaConformidad = totalMuestras > 0 ? Math.round((muestrasAprobadas / totalMuestras) * 100) : 0;
-  const totalHallazgosAlertas = muestras.filter(m => m.dictamenFinal === 'HALLAZGO' || m.dictamenFinal === 'RECHAZADO').length;
-  const leadTimePromedio = totalMuestras > 0 ? (kpis.leadTimePromedioDias || 1.5) : 0;
-
-  const currentYearMonth = new Date().toISOString().substring(0, 7);
-  const informesMes = muestras.filter(m => m.fechaIngreso && m.fechaIngreso.startsWith(currentYearMonth)).length;
+  const muestrasRechazadas = muestras.filter(m => m.dictamenFinal === 'RECHAZADO').length;
 
   const cardsData = [
     {
-      id: 'muestras-evaluadas',
-      title: t('Muestras Evaluadas', 'Evaluated Samples'),
-      value: `${totalMuestras}`,
-      subtitle: `${proveedoresUnicos} ${t('proveedores activos en lab', 'active suppliers in lab')}`,
-      badgeText: totalMuestras > 0 ? 'ACTIVO' : 'SIN DATOS',
-      badgeClass: totalMuestras > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[#2B2B2E] text-[#AA9E80]',
-      actionFilter: () => setFiltros(prev => ({ ...prev, dictamen: 'TODOS' }))
+      id: 'compras',
+      title: t('Solicitudes de Compras', 'Purchase Requests'),
+      value: totalComprasTelas,
+      statusLabel: t('Pendientes', 'Pending'),
+      statusColor: 'text-sky-600 dark:text-sky-400',
+      icon: <Folder className="w-5 h-5 text-sky-500" />,
+      iconBg: 'bg-sky-100 dark:bg-sky-950/60 border border-sky-200/50 dark:border-sky-800/40',
+      action: () => navegarA('compras', 'telas')
     },
     {
-      id: 'conformidad-stf',
-      title: t('Tasa de Conformidad', 'Conformity Rate'),
-      value: `${tasaConformidad}%`,
-      subtitle: t('Conformidad Especificación STF', 'STF Spec Compliance'),
-      badgeText: tasaConformidad > 0 ? 'EXITO' : 'SIN DATOS',
-      badgeClass: tasaConformidad > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[#2B2B2E] text-[#AA9E80]',
-      actionFilter: () => setFiltros(prev => ({ ...prev, dictamen: 'APROBADO' }))
+      id: 'ensayos',
+      title: t('Ensayos', 'Tests'),
+      value: pendientesLabTotal,
+      statusLabel: t('En proceso', 'In process'),
+      statusColor: 'text-purple-600 dark:text-purple-400',
+      icon: <FlaskConical className="w-5 h-5 text-purple-500" />,
+      iconBg: 'bg-purple-100 dark:bg-purple-950/60 border border-purple-200/50 dark:border-purple-800/40',
+      action: () => navegarA('laboratorio', 'telas')
     },
     {
-      id: 'alertas-hallazgos',
-      title: t('Alertas y Hallazgos', 'Alerts & Findings'),
-      value: `${totalHallazgosAlertas}`,
-      subtitle: t('Hallazgos técnicos + Lead time', 'Technical findings + Lead time'),
-      badgeText: totalHallazgosAlertas > 0 ? 'ALERTA' : 'AL DIA',
-      badgeClass: totalHallazgosAlertas > 0 ? 'bg-[#C6A466]/20 text-[#C6A466] border border-[#C6A466]/30' : 'bg-emerald-500/20 text-emerald-300',
-      actionFilter: () => setFiltros(prev => ({ ...prev, dictamen: 'HALLAZGO' }))
+      id: 'resultados',
+      title: t('Resultados Registrados', 'Registered Results'),
+      value: totalMuestras,
+      statusLabel: t('Completados', 'Completed'),
+      statusColor: 'text-emerald-600 dark:text-emerald-400',
+      icon: <FileCheck className="w-5 h-5 text-emerald-500" />,
+      iconBg: 'bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-200/50 dark:border-emerald-800/40',
+      action: () => setFiltros(prev => ({ ...prev, dictamen: 'TODOS' }))
     },
     {
-      id: 'tiempo-respuesta',
-      title: t('Tiempo de Respuestas', 'Response Time'),
-      value: `${leadTimePromedio}d`,
-      subtitle: t('Meta operativa < 2.0 días', 'Operational target < 2.0 days'),
-      badgeText: 'SLA',
-      badgeClass: 'bg-[#C6A466]/20 text-[#C6A466] border border-[#C6A466]/30',
-      actionFilter: () => setFiltros(prev => ({ ...prev, soloAlertasLeadTime: false }))
+      id: 'aprobadas',
+      title: t('Telas Aprobadas', 'Approved Fabrics'),
+      value: muestrasAprobadas,
+      statusLabel: t('Aprobadas', 'Approved'),
+      statusColor: 'text-emerald-600 dark:text-emerald-400',
+      icon: <ShieldCheck className="w-5 h-5 text-emerald-500" />,
+      iconBg: 'bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-200/50 dark:border-emerald-800/40',
+      action: () => setFiltros(prev => ({ ...prev, dictamen: 'APROBADO' }))
     },
     {
-      id: 'informes-calidad',
-      title: t('Informes de Calidad', 'Quality Reports'),
-      value: `${informesMes}`,
-      subtitle: t('Generados Este Mes', 'Generated This Month'),
-      badgeText: 'REPORTE',
-      badgeClass: 'bg-[#C6A466]/20 text-[#C6A466] border border-[#C6A466]/30',
-      actionFilter: () => setFiltros(prev => ({ ...prev, soloAlertasLeadTime: false }))
+      id: 'rechazadas',
+      title: t('Telas Rechazadas', 'Rejected Fabrics'),
+      value: muestrasRechazadas,
+      statusLabel: t('Rechazadas', 'Rejected'),
+      statusColor: 'text-rose-600 dark:text-rose-400',
+      icon: <XCircle className="w-5 h-5 text-rose-500" />,
+      iconBg: 'bg-rose-100 dark:bg-rose-950/60 border border-rose-200/50 dark:border-rose-800/40',
+      action: () => setFiltros(prev => ({ ...prev, dictamen: 'RECHAZADO' }))
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 font-sans select-none animate-fade-in">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4 font-sans select-none animate-fade-in">
       {cardsData.map((card) => {
         return (
           <div 
             key={card.id}
-            onClick={card.actionFilter}
-            className="bg-[#2D2D30] border border-[#424246] hover:border-[#C6A466] rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+            onClick={card.action}
+            className="bg-white dark:bg-[#0f1b35] border border-slate-200/90 dark:border-[#1e3461] hover:border-[#00b4d8] dark:hover:border-[#00b4d8] rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between group relative overflow-hidden"
           >
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-[#FBF8F2] tracking-tight group-hover:text-[#C6A466] transition-colors">
-                {card.title}
-              </h3>
-              
-              <div className="mt-2.5 sm:mt-3">
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#C6A466] font-sans tracking-tight block">
-                  {card.value}
+            {/* Cabecera de la tarjeta: Icono y Título */}
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform`}>
+                {card.icon}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">
+                  {card.title}
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-[#AA9E80] mt-0.5 sm:mt-1 block truncate">
-                  {card.subtitle}
-                </span>
+
+                {/* Número Grande Destacado */}
+                <div className="mt-1">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                    {card.value}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 sm:mt-5 flex items-center">
-              <span className={`inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold ${card.badgeClass}`}>
-                <span className="opacity-70 mr-1 font-normal">Status:</span> {card.badgeText}
+            {/* Pie de la tarjeta: Estado y Flecha Chevron */}
+            <div className="mt-3.5 pt-2 border-t border-slate-100 dark:border-[#17254e] flex items-center justify-between">
+              <span className={`text-xs font-bold ${card.statusColor}`}>
+                {card.statusLabel}
               </span>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#00b4d8] group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         );

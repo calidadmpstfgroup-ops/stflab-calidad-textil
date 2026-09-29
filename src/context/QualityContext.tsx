@@ -21,7 +21,8 @@ import {
   AnalistaLaboratorio,
   SelloResponsable,
   RegistroEdicionAudit,
-  EvaluacionForrosCosturas
+  EvaluacionForrosCosturas,
+  ItemPapelera
 } from '../types';
 import { 
   MOCK_MUESTRAS, 
@@ -52,6 +53,16 @@ interface QualityContextType {
   muestrasFiltradas: MuestraTextil[];
   areaActual: AreaType;
   setAreaActual: (area: AreaType) => void;
+  subseccionLaboratorio: 'telas' | 'accesorios' | 'forros-costuras' | 'historial';
+  setSubseccionLaboratorio: (sub: 'telas' | 'accesorios' | 'forros-costuras' | 'historial') => void;
+  subseccionCompras: 'telas' | 'accesorios';
+  setSubseccionCompras: (sub: 'telas' | 'accesorios') => void;
+  navegarA: (area: AreaType, subseccion?: string) => void;
+  pendientesLabTelas: number;
+  pendientesLabInsumos: number;
+  pendientesLabTotal: number;
+  totalComprasTelas: number;
+  totalComprasInsumos: number;
   filtros: FiltrosDashboard;
   setFiltros: React.Dispatch<React.SetStateAction<FiltrosDashboard>>;
   resetearFiltros: () => void;
@@ -69,6 +80,16 @@ interface QualityContextType {
   setModalAlertasLeadTimeAbierto: (abierto: boolean) => void;
   modalSelectorAreaAbierto: boolean;
   setModalSelectorAreaAbierto: (abierto: boolean) => void;
+  modalPapeleraAbierto: boolean;
+  setModalPapeleraAbierto: (abierto: boolean) => void;
+
+  // 🗑️ Papelera de Reciclaje
+  papelera: ItemPapelera[];
+  eliminarSolicitudTelas: (id: string, area: 'compras' | 'laboratorio') => void;
+  eliminarSolicitudAccesorios: (id: string, area: 'compras' | 'laboratorio') => void;
+  restaurarDePapelera: (papeleraId: string) => void;
+  eliminarPermanentePapelera: (papeleraId: string) => void;
+  vaciarPapelera: () => void;
 
   // Acciones CRUD y Dictamen
   actualizarDictamenArea: (
@@ -205,13 +226,38 @@ const FILTROS_INICIALES: FiltrosDashboard = {
 
 const QualityContext = createContext<QualityContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'stflab_muestras_prod_zero_v2';
-const LOCAL_STORAGE_ACC_KEY = 'stflab_solicitudes_acc_zero_v2';
-const LOCAL_STORAGE_TELAS_KEY = 'stflab_solicitudes_telas_zero_v2';
-const LOCAL_STORAGE_FICHAS_KEY = 'stflab_fichas_prod_clean_v1';
+const LOCAL_STORAGE_KEY = 'stflab_muestras_clean_v5';
+const LOCAL_STORAGE_ACC_KEY = 'stflab_solicitudes_acc_clean_v5';
+const LOCAL_STORAGE_TELAS_KEY = 'stflab_solicitudes_telas_clean_v5';
+const LOCAL_STORAGE_FICHAS_KEY = 'stflab_fichas_clean_v5';
+const LOCAL_STORAGE_PAPELERA_KEY = 'stflab_papelera_reciclaje_v1';
+const LOCAL_STORAGE_FORROS_KEY = 'stflab_forros_costuras_clean_v5';
 
 export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { usuario, obtenerFirmaSesion } = useAuth();
+
+  // 🗑️ Estado de la Papelera de Reciclaje
+  const [modalPapeleraAbierto, setModalPapeleraAbierto] = useState<boolean>(false);
+  const [papelera, setPapelera] = useState<ItemPapelera[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_PAPELERA_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error leyendo localStorage de papelera:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_PAPELERA_KEY, JSON.stringify(papelera));
+    } catch (e) {
+      console.error('Error guardando papelera:', e);
+    }
+  }, [papelera]);
   const [analistas, setAnalistas] = useState<AnalistaLaboratorio[]>(() => {
     try {
       const stored = localStorage.getItem('stflab_analistas_list_v2');
@@ -318,10 +364,52 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (e) {
       console.warn('Error leyendo localStorage de fichas:', e);
     }
-    return MOCK_FICHAS_TECNICAS_HISTORICAS;
+    return [];
   });
 
   const [areaActual, setAreaActual] = useState<AreaType>('dashboard');
+  const [subseccionLaboratorio, setSubseccionLaboratorio] = useState<'telas' | 'accesorios' | 'forros-costuras' | 'historial'>('telas');
+  const [subseccionCompras, setSubseccionCompras] = useState<'telas' | 'accesorios'>('telas');
+
+  const navegarA = (area: AreaType, subseccion?: string) => {
+    if (area === 'laboratorio') {
+      if (subseccion === 'accesorios' || subseccion === 'insumos') {
+        setSubseccionLaboratorio('accesorios');
+      } else if (subseccion === 'forros-costuras') {
+        setSubseccionLaboratorio('forros-costuras');
+      } else if (subseccion === 'historial') {
+        setSubseccionLaboratorio('historial');
+      } else if (subseccion === 'telas') {
+        setSubseccionLaboratorio('telas');
+      }
+      setAreaActual('laboratorio');
+      return;
+    }
+
+    if (area === 'compras' || area === 'compras-decision') {
+      if (subseccion === 'accesorios' || subseccion === 'insumos') {
+        setSubseccionCompras('accesorios');
+      } else if (subseccion === 'telas') {
+        setSubseccionCompras('telas');
+      }
+      setAreaActual(area);
+      return;
+    }
+
+    setAreaActual(area);
+  };
+
+  const pendientesLabTelas = (solicitudesTelas || [])
+    .flatMap(s => s.telas || [])
+    .filter(t => !t.dictamen || t.dictamen === 'PENDIENTE' || t.dictamen === 'EN_PROCESO').length;
+
+  const pendientesLabInsumos = (solicitudesAccesorios || [])
+    .flatMap(s => s.muestras || [])
+    .filter(m => !m.dictamen || m.dictamen === 'PENDIENTE' || m.dictamen === 'EN_PROCESO').length;
+
+  const pendientesLabTotal = pendientesLabTelas + pendientesLabInsumos;
+  const totalComprasTelas = (solicitudesTelas || []).length;
+  const totalComprasInsumos = (solicitudesAccesorios || []).length;
   const [filtros, setFiltros] = useState<FiltrosDashboard>(FILTROS_INICIALES);
   const [muestraSeleccionada, setMuestraSeleccionada] = useState<MuestraTextil | null>(null);
 
@@ -600,14 +688,138 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     setMuestras([]);
     setSolicitudesTelas([]);
     setSolicitudesAccesorios([]);
+    setFichasTecnicasHistorial([]);
+    setEvaluacionesForrosCosturas([]);
+    setPapelera([]);
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     localStorage.removeItem(LOCAL_STORAGE_TELAS_KEY);
     localStorage.removeItem(LOCAL_STORAGE_ACC_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_FICHAS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_FORROS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_PAPELERA_KEY);
     resetearFiltros();
   };
 
   const restablecerDatosIniciales = () => {
     limpiarTodosLosDatos();
+  };
+
+  // =========================================================================
+  // --- 🗑️ PAPELERA DE RECICLAJE (COMPRAS & LABORATORIO)                  ---
+  // =========================================================================
+  const eliminarSolicitudTelas = (solicitudId: string, area: 'compras' | 'laboratorio') => {
+    const sol = solicitudesTelas.find(s => s.id === solicitudId);
+    if (!sol) return;
+
+    const nombreUsuario = usuario?.displayName || usuario?.nombreUsuario || (area === 'compras' ? 'Compras' : 'Laboratorio');
+
+    const itemPapelera: ItemPapelera = {
+      id: `pap-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tipo: 'tela',
+      solicitudOriginalId: sol.id,
+      numeroSolicitud: sol.numeroSolicitud || sol.id,
+      fechaSolicitud: sol.fechaSolicitud || new Date().toISOString(),
+      solicitante: sol.solicitante || 'Compras',
+      proveedor: sol.proveedor || (sol.telas && sol.telas[0]?.proveedor) || 'No especificado',
+      cantidadItems: sol.telas ? sol.telas.length : 1,
+      eliminadoPor: nombreUsuario,
+      areaEliminacion: area,
+      fechaEliminacion: new Date().toISOString(),
+      motivo: `Eliminado desde el módulo de ${area}`,
+      datosCompletos: sol
+    };
+
+    setPapelera(prev => [itemPapelera, ...prev]);
+    setSolicitudesTelas(prev => prev.filter(s => s.id !== solicitudId));
+
+    soundEffects.reproducir('alerta');
+    dispararNotificacion({
+      tipo: 'alerta',
+      titulo: '🗑️ Solicitud enviada a la Papelera',
+      mensaje: `La solicitud ${sol.numeroSolicitud} fue eliminada desde ${area} y archivada en la Papelera de Reciclaje.`
+    });
+  };
+
+  const eliminarSolicitudAccesorios = (solicitudId: string, area: 'compras' | 'laboratorio') => {
+    const sol = solicitudesAccesorios.find(s => s.id === solicitudId);
+    if (!sol) return;
+
+    const nombreUsuario = usuario?.displayName || usuario?.nombreUsuario || (area === 'compras' ? 'Compras' : 'Laboratorio');
+
+    const itemPapelera: ItemPapelera = {
+      id: `pap-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tipo: 'accesorio',
+      solicitudOriginalId: sol.id,
+      numeroSolicitud: sol.numeroSolicitud || sol.id,
+      fechaSolicitud: sol.fechaSolicitud || new Date().toISOString(),
+      solicitante: sol.solicitante || 'Compras',
+      proveedor: sol.proveedor || 'No especificado',
+      cantidadItems: sol.muestras ? sol.muestras.length : 1,
+      eliminadoPor: nombreUsuario,
+      areaEliminacion: area,
+      fechaEliminacion: new Date().toISOString(),
+      motivo: `Eliminado desde el módulo de ${area}`,
+      datosCompletos: sol
+    };
+
+    setPapelera(prev => [itemPapelera, ...prev]);
+    setSolicitudesAccesorios(prev => prev.filter(s => s.id !== solicitudId));
+
+    soundEffects.reproducir('alerta');
+    dispararNotificacion({
+      tipo: 'alerta',
+      titulo: '🗑️ Solicitud enviada a la Papelera',
+      mensaje: `La solicitud de insumos ${sol.numeroSolicitud} fue eliminada desde ${area} y archivada en la Papelera de Reciclaje.`
+    });
+  };
+
+  const restaurarDePapelera = (itemId: string) => {
+    const item = papelera.find(p => p.id === itemId);
+    if (!item) return;
+
+    if (item.tipo === 'tela') {
+      const sol = item.datosCompletos as SolicitudTelasCompleta;
+      setSolicitudesTelas(prev => {
+        if (prev.some(s => s.id === sol.id)) return prev;
+        return [sol, ...prev];
+      });
+    } else {
+      const sol = item.datosCompletos as SolicitudAccesoriosCompleta;
+      setSolicitudesAccesorios(prev => {
+        if (prev.some(s => s.id === sol.id)) return prev;
+        return [sol, ...prev];
+      });
+    }
+
+    setPapelera(prev => prev.filter(p => p.id !== itemId));
+    soundEffects.reproducir('aprobado');
+    dispararNotificacion({
+      tipo: 'aprobado',
+      titulo: '✅ Solicitud Restaurada',
+      mensaje: `La solicitud ${item.numeroSolicitud} fue restaurada exitosamente a su módulo correspondiente.`
+    });
+  };
+
+  const eliminarPermanentePapelera = (itemId: string) => {
+    const item = papelera.find(p => p.id === itemId);
+    setPapelera(prev => prev.filter(p => p.id !== itemId));
+    soundEffects.reproducir('alerta');
+    dispararNotificacion({
+      tipo: 'alerta',
+      titulo: 'Elemento Eliminado',
+      mensaje: `La solicitud ${item?.numeroSolicitud || ''} fue eliminada permanentemente.`
+    });
+  };
+
+  const vaciarPapelera = () => {
+    const total = papelera.length;
+    setPapelera([]);
+    soundEffects.reproducir('alerta');
+    dispararNotificacion({
+      tipo: 'alerta',
+      titulo: 'Papelera Vaciada',
+      mensaje: `Se eliminaron permanentemente ${total} registros de la papelera.`
+    });
   };
 
   // =========================================================================
@@ -659,10 +871,11 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     // 🔔 Alerta Animada con Sonido: Nueva Solicitud de Telas
     dispararNotificacion({
       tipo: 'solicitud',
-      titulo: '🚀 Nueva Solicitud de Telas Generada',
-      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.telas?.length || 1} telas) enviada a Laboratorio por ${firma.nombreCompleto}.`,
+      titulo: '🧵 Compras - Telas: Nueva Solicitud de Ensayo',
+      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.telas?.length || 1} telas) enviada a Laboratorio - Telas por ${firma.nombreCompleto}.`,
       areaDestino: 'laboratorio',
-      accionLabel: 'Ver en Laboratorio'
+      subseccion: 'telas',
+      accionLabel: 'Ver en Laboratorio - Telas'
     });
   };
 
@@ -687,6 +900,7 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           titulo: '❌ Rechazado - Falta Ficha Técnica del Proveedor',
           mensaje: `No se pudo enviar la solicitud ${solActual.numeroSolicitud} a laboratorio: La tela "${listaRef}" no tiene Ficha Técnica del Proveedor.`,
           areaDestino: 'compras',
+          subseccion: 'telas',
           accionLabel: 'Ver Fichas'
         });
         alert(`❌ RECHAZADO: La tela "${listaRef}" no cuenta con la Ficha Técnica del Proveedor. Debe cargarse previamente antes de transferir a laboratorio.`);
@@ -716,10 +930,11 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
         // 🔔 Alerta Animada con Sonido al Enviar
         dispararNotificacion({
           tipo: 'solicitud',
-          titulo: '🚀 Solicitud de Telas Enviada a Laboratorio',
-          mensaje: `Solicitud ${sol.numeroSolicitud} transferida a Laboratorio por ${firma.nombreCompleto}.`,
+          titulo: '🧵 Compras - Telas: Solicitud Transferida a Laboratorio',
+          mensaje: `Solicitud ${sol.numeroSolicitud} (${sol.telas?.length || 1} telas) transferida a Laboratorio - Telas por ${firma.nombreCompleto}.`,
           areaDestino: 'laboratorio',
-          accionLabel: 'Ver en Laboratorio'
+          subseccion: 'telas',
+          accionLabel: 'Ver en Laboratorio - Telas'
         });
 
         return actualizada;
@@ -984,20 +1199,36 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
       { firma, previousValue: null, newValue: solicitud.numeroSolicitud }
     );
 
-    // 🔔 Alerta Animada con Sonido: Nueva Solicitud de Accesorios
+    // 🔔 Alerta Animada con Sonido: Nueva Solicitud de Insumos
     dispararNotificacion({
       tipo: 'solicitud',
-      titulo: '🔩 Nueva Solicitud de Accesorios Generada',
-      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.muestras?.length || 1} insumos) enviada a Laboratorio por ${firma.nombreCompleto}.`,
+      titulo: '🔩 Compras - Insumos: Nueva Solicitud de Ensayo',
+      mensaje: `Solicitud ${solicitud.numeroSolicitud} (${solicitud.muestras?.length || 1} insumos) enviada a Laboratorio - Insumos por ${firma.nombreCompleto}.`,
       areaDestino: 'laboratorio',
-      accionLabel: 'Ver en Laboratorio'
+      subseccion: 'accesorios',
+      accionLabel: 'Ver en Laboratorio - Insumos'
     });
   };
 
   const enviarSolicitudAccesoriosALaboratorio = (solicitudId: string) => {
     const firma = obtenerFirmaSesion();
     setSolicitudesAccesorios((prev) =>
-      prev.map((sol) => (sol.id === solicitudId ? { ...sol, estadoFlujo: 'ENVIADA', recibidoPorFirma: firma } : sol))
+      prev.map((sol) => {
+        if (sol.id !== solicitudId) return sol;
+        const actualizada: SolicitudAccesoriosCompleta = { ...sol, estadoFlujo: 'ENVIADA', recibidoPorFirma: firma };
+        
+        // 🔔 Alerta Animada con Sonido al Enviar
+        dispararNotificacion({
+          tipo: 'solicitud',
+          titulo: '🔩 Compras - Insumos: Solicitud Transferida a Laboratorio',
+          mensaje: `Solicitud ${sol.numeroSolicitud} (${sol.muestras?.length || 1} insumos) transferida a Laboratorio - Insumos por ${firma.nombreCompleto}.`,
+          areaDestino: 'laboratorio',
+          subseccion: 'accesorios',
+          accionLabel: 'Ver en Laboratorio - Insumos'
+        });
+
+        return actualizada;
+      })
     );
   };
 
@@ -1191,20 +1422,20 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
   // --- MÓDULO FORROS Y COSTURAS (PIPIN VS SHIPPING) ---
   const [evaluacionesForrosCosturas, setEvaluacionesForrosCosturas] = useState<EvaluacionForrosCosturas[]>(() => {
     try {
-      const stored = localStorage.getItem('stflab_forros_costuras_v1');
+      const stored = localStorage.getItem(LOCAL_STORAGE_FORROS_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.warn('Error leyendo localStorage de forros y costuras:', e);
     }
-    return MOCK_EVALUACIONES_FORROS_COSTURAS;
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('stflab_forros_costuras_v1', JSON.stringify(evaluacionesForrosCosturas));
+      localStorage.setItem(LOCAL_STORAGE_FORROS_KEY, JSON.stringify(evaluacionesForrosCosturas));
     } catch (e) {
       console.error('Error guardando forros y costuras:', e);
     }
@@ -1292,6 +1523,16 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
         muestrasFiltradas,
         areaActual,
         setAreaActual,
+        subseccionLaboratorio,
+        setSubseccionLaboratorio,
+        subseccionCompras,
+        setSubseccionCompras,
+        navegarA,
+        pendientesLabTelas,
+        pendientesLabInsumos,
+        pendientesLabTotal,
+        totalComprasTelas,
+        totalComprasInsumos,
         filtros,
         setFiltros,
         resetearFiltros,
@@ -1343,7 +1584,15 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
         agregarEvaluacionForrosCosturas,
         actualizarEvaluacionForrosCosturas,
         eliminarEvaluacionForrosCosturas,
-        enviarCorreoReporteForrosCosturas
+        enviarCorreoReporteForrosCosturas,
+        modalPapeleraAbierto,
+        setModalPapeleraAbierto,
+        papelera,
+        eliminarSolicitudTelas,
+        eliminarSolicitudAccesorios,
+        restaurarDePapelera,
+        eliminarPermanentePapelera,
+        vaciarPapelera
       }}
     >
       {children}

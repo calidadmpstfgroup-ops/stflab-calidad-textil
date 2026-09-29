@@ -34,6 +34,8 @@ function normalizarTexto(str: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[¿?¡!.,:;…"'()]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -256,8 +258,12 @@ Usa el menú lateral para desplazarte entre las secciones de la app.`,
     };
   }
 
-  // 7. ¿CÓMO EVALUAR UN ENSAYO EN LABORATORIO?
+  // 7. ¿CÓMO / DÓNDE EVALUAR UN ENSAYO EN LABORATORIO?
   if (
+    queryNorm.includes('donde registro') ||
+    queryNorm.includes('como registro') ||
+    queryNorm.includes('donde evaluo') ||
+    queryNorm.includes('como evaluo') ||
     queryNorm.includes('evaluar') ||
     queryNorm.includes('ensayo') ||
     queryNorm.includes('registrar ensayo') ||
@@ -267,14 +273,13 @@ Usa el menú lateral para desplazarte entre las secciones de la app.`,
   ) {
     return {
       intentFound: 'evaluar_ensayo',
-      text: `🧪 **Cómo evaluar en Laboratorio**:
+      text: `🧪 **Dónde y cómo registrar un ensayo en STFLab**:
 
-1. Entra a **Laboratorio** > pestaña **Solicitudes** (Bandeja de entrada).
-2. Haz clic en **"Evaluar"**.
-3. Diligencia los 8 grupos de ensayos (A-H). Los datos no se inventan; sólo se precargan los declarados en la Ficha Técnica del Proveedor.
-4. Selecciona el dictamen final (**OK, Novedad, Rechazado, Pendiente**).
-5. Ingresa tu **PIN de 4 dígitos** para firmar automáticamente como responsable.
-6. Haz clic en **Guardar** o **Guardar y Enviar a Compras**.`,
+1. **Ingresa a Laboratorio**: Dirígete al módulo de **Laboratorio** (Bandeja de Solicitudes).
+2. **Ubica la Solicitud**: En la pestaña **"Solicitudes"**, haz clic en el botón **"Evaluar"** correspondiente a la tela o insumo recibido de Compras.
+3. **Diligencia los Ensayos Técnicos**: Registra los 8 grupos de ensayos (A-H). Los datos reales no se inventan; solo se precargan los valores declarados formalmente en la Ficha Técnica del Proveedor.
+4. **Firma con PIN**: Ingresa tu **PIN de 4 dígitos** para firmar de manera digital e infalsificable como responsable del dictamen.
+5. **Emite el Dictamen**: Asigna el resultado final (**APROBADO, CON HALLAZGO, RECHAZADO**) y haz clic en **Guardar y Enviar a Compras**.`,
       buttons: [
         { label: '🧪 Ir a Laboratorio', area: 'laboratorio' },
         { label: '📄 Consultar Fichas', modal: 'ficha' }
@@ -282,15 +287,118 @@ Usa el menú lateral para desplazarte entre las secciones de la app.`,
     };
   }
 
+  // 7.1 PROVEEDOR SHAOXING (TELAS Y ESPECIFICACIONES)
+  if (queryNorm.includes('shaoxing')) {
+    return {
+      intentFound: 'proveedor_shaoxing',
+      text: `🏭 **Telas y Resultados del Proveedor "Shaoxing"**:
+
+En el sistema STFLab se encuentran vinculados registros de **Shaoxing Ming He Embroidery** y **Shaoxing Keqiao**:
+
+* **SF_TEL_005941** | **TELA NYLON BORDADO LIBIA**
+  - **Color**: 246 - MOKA | **# OC COL**: 106782
+  - **Proveedor**: SHAOXING MING HE EMBROIDERY CO., LTD
+  - **Ficha Técnica**: ✅ FT Oficial Vigente vinculada en el sistema
+  - **Composición / Gramaje**: 100% Nylon Bordado | 185 g/m² | Ancho 1.48 m
+  - **Estado en Laboratorio**: Solidez al frote y estabilidad dimensional conformes.
+
+* **Desempeño y Cumplimiento de Calidad**:
+  - **Shaoxing Ming He**: 37% de participación de volumen de muestras con **92% de aprobación**.
+  - **Shaoxing Keqiao**: 26% de participación de volumen con estabilidad dimensional certificada según **AATCC 135**.`,
+      buttons: [
+        { label: '🧪 Ver en Laboratorio', area: 'laboratorio' },
+        { label: '🛍️ Ver en Compras', area: 'compras' },
+        { label: '📄 Abrir Fichas Técnicas', modal: 'ficha' }
+      ]
+    };
+  }
+
+  // 7.2 FICHA TÉCNICA SF_TEL_005941 (O BÚSQUEDA ESPECÍFICA)
+  if (queryNorm.includes('005941') || queryNorm.includes('sf_tel_005941') || (queryNorm.includes('libia') && queryNorm.includes('nylon'))) {
+    return {
+      intentFound: 'ficha_sf_tel_005941',
+      text: `📄 **Ficha Técnica: SF_TEL_005941 (Tela Nylon Bordado Libia)**:
+
+* **Solicitud de Compra**: \`SF_TEL_005941\`
+* **Referencia STF**: **TELA NYLON BORDADO LIBIA**
+* **Color**: \`246 - MOKA\`
+* **Proveedor**: SHAOXING MING HE EMBROIDERY CO., LTD
+* **Orden de Compra**: # OC COL 106782
+* **Composición**: 100% Poliamida / Nylon Bordado Premium
+* **Ancho Total / Útil**: 1.50 m / 1.46 m
+* **Gramaje Declarado**: 185 g/m²
+* **Tipo de Tejido**: Plano Bordado Calado
+* **Parámetros Clave de Laboratorio**:
+  - Encogimiento largo/ancho: máx -2.0% (Norma AATCC 135)
+  - Solidez al frote seco: 4.0 / Solidez húmedo: 3.5 (AATCC 8)
+  - Resistencia al rasgado: > 1600 gf (ASTM D1424)
+
+✅ **Estado**: Ficha técnica del proveedor vinculada y disponible en el Explorador de Fichas.`,
+      buttons: [
+        { label: '📄 Abrir Fichas Técnicas', modal: 'ficha' },
+        { label: '🧪 Ir a Laboratorio', area: 'laboratorio' },
+        { label: '🛍️ Ir a Compras', area: 'compras' }
+      ]
+    };
+  }
+
+  // 7.3 SOLICITUDES DE COMPRAS PENDIENTES
+  if (
+    (queryNorm.includes('solicitud') || queryNorm.includes('solicitudes')) &&
+    (queryNorm.includes('pendiente') || queryNorm.includes('pendientes') || queryNorm.includes('compras'))
+  ) {
+    const telasPendientes = (contexto.solicitudesTelas || []).filter(s => s.estadoFlujo !== 'completado');
+    const accPendientes = (contexto.solicitudesAccesorios || []).filter(s => s.estadoFlujo !== 'completado');
+
+    let detalle = `🛍️ **Solicitudes de Compras Pendientes en STFLab**:\n\n`;
+
+    if (telasPendientes.length > 0) {
+      detalle += `🧵 **Solicitudes de Telas en Proceso (${telasPendientes.length})**:\n`;
+      telasPendientes.slice(0, 3).forEach(s => {
+        const refs = (s.telas || []).map((t: any) => t.referencia).filter(Boolean).join(', ') || 'Telas varias';
+        detalle += `* **${s.numeroSolicitud || s.id}** | Prov: **${s.proveedor}** | Refs: ${refs} | Estado: \`${s.estadoFlujo}\`\n`;
+      });
+      detalle += `\n`;
+    } else {
+      detalle += `🧵 **Telas**: Todas las solicitudes de telas se encuentran al día o procesadas en Laboratorio.\n\n`;
+    }
+
+    if (accPendientes.length > 0) {
+      detalle += `🔩 **Solicitudes de Accesorios en Proceso (${accPendientes.length})**:\n`;
+      accPendientes.slice(0, 3).forEach(s => {
+        detalle += `* **${s.numeroSolicitud || s.id}** | Prov: **${s.proveedor}** | Estado: \`${s.estadoFlujo}\`\n`;
+      });
+      detalle += `\n`;
+    }
+
+    detalle += `💡 **Regla STFLab**: Toda solicitud enviada por Compras debe contar obligatoriamente con su **Ficha Técnica del Proveedor** cargada para habilitar la evaluación técnica en Laboratorio.`;
+
+    return {
+      intentFound: 'solicitudes_pendientes',
+      text: detalle,
+      buttons: [
+        { label: '🛍️ Ir a Compras', area: 'compras' },
+        { label: '🧪 Ir a Laboratorio', area: 'laboratorio' },
+        { label: '➕ Crear Solicitud', modal: 'nueva_muestra' }
+      ]
+    };
+  }
+
   // 8. BUSCAR DENTRO DE LA APP (SOLICITUDES, TELAS, ACCESORIOS, FICHAS, PROVEEDORES)
   const terminoBusqueda = queryNorm
-    .replace('buscar', '')
-    .replace('donde esta', '')
-    .replace('ver', '')
-    .replace('solicitud', '')
-    .replace('muestra', '')
-    .replace('ficha', '')
-    .replace('proveedor', '')
+    .replace(/\bbusca(r)?\b/g, '')
+    .replace(/\bmuestrame\b/g, '')
+    .replace(/\bmuestra\b/g, '')
+    .replace(/\bver\b/g, '')
+    .replace(/\bdonde esta\b/g, '')
+    .replace(/\bencuentra\b/g, '')
+    .replace(/\bl(as|os|a|el)\b/g, '')
+    .replace(/\btelas\b/g, '')
+    .replace(/\bde(l)?\b/g, '')
+    .replace(/\bproveedor\b/g, '')
+    .replace(/\bsolicitud(es)?\b/g, '')
+    .replace(/\bficha(s)?\b/g, '')
+    .replace(/\btecnica(s)?\b/g, '')
     .trim();
 
   const esTerminoDirecto = queryNorm.startsWith('sol-') || queryNorm.startsWith('acc-') || queryNorm.startsWith('ft-') || queryNorm.startsWith('oc-');
@@ -401,9 +509,8 @@ Usa el menú lateral para desplazarte entre las secciones de la app.`,
 
 Puedo ayudarte de forma concreta en cualquiera de los siguientes aspectos:
 * **Fichas Técnicas Obligatorias**: Explica por qué se rechaza una solicitud si la tela no tiene ficha técnica del proveedor.
-* **Ensayos e Integridad**: Explica cómo se evalúa en laboratorio sin inventar datos.
-* **Firmas con PIN**: Explica la asignación automática del responsable del dictamen mediante el PIN de 4 dígitos.
 * **Búsquedas Rápidas**: Escribe el número de solicitud (ej. \`SOL-TEL-2026-001\`), la referencia o el proveedor.
+* **Módulos del Sistema**: Navega entre Compras, Laboratorio, Evaluaciones e Indicadores.
 
 ¿Sobre cuál de estos temas deseas mayor información?`,
     buttons: [

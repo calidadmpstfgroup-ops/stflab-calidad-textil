@@ -62,11 +62,20 @@ export const ComprasView: React.FC = () => {
     solicitudesAccesorios, 
     agregarSolicitudAccesorios,
     enviarSolicitudAccesoriosALaboratorio,
-    consultarFichaTecnicaHistorica
+    consultarFichaTecnicaHistorica,
+    subseccionCompras,
+    setSubseccionCompras,
+    eliminarSolicitudTelas,
+    eliminarSolicitudAccesorios,
+    papelera,
+    setModalPapeleraAbierto
   } = useQuality();
 
-  // Subsecciones de Compras: 🧵 Telas vs 🔩 Accesorios
-  const [subseccionActiva, setSubseccionActiva] = useState<'telas' | 'accesorios'>('telas');
+  // Subsecciones de Compras: 🧵 Telas vs 🔩 Accesorios (sincronizada con QualityContext)
+  const subseccionActiva = subseccionCompras || 'telas';
+  const setSubseccionActiva = (sub: 'telas' | 'accesorios') => {
+    setSubseccionCompras(sub);
+  };
 
   // Modal de Decisión de Compra de Telas (con alertas funcionales a Patronaje y Corte)
   const [telaParaDecision, setTelaParaDecision] = useState<{ solicitud: SolicitudTelasCompleta; tela: ItemMuestraTela } | null>(null);
@@ -514,18 +523,28 @@ export const ComprasView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-[#FBF8F2] tracking-tight font-sans">3. Módulo de Compras</h2>
-              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#C6A466]/15 text-[#C6A466] border border-[#C6A466]/30 font-mono tracking-wider">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-sans">3. Módulo de Compras</h2>
+              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#00b4d8]/15 text-[#008db0] dark:text-[#38bdf8] border border-[#00b4d8]/30 font-mono tracking-wider">
                 GENERACIÓN & ENVÍO DE SOLICITUDES A LABORATORIO
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-[#A8A095] mt-1 font-medium leading-relaxed">
-              Compras genera y envía solicitudes para evaluación técnica. <strong className="text-[#FBF8F2]">No realiza ensayos ni administra fichas técnicas de proveedores.</strong>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium leading-relaxed">
+              Compras genera y envía solicitudes para evaluación técnica. <strong className="text-slate-900 dark:text-white">No realiza ensayos ni administra fichas técnicas de proveedores.</strong>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setModalPapeleraAbierto(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+            title="Ver solicitudes eliminadas"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>Papelera ({papelera.length})</span>
+          </button>
+
           {subseccionActiva === 'telas' ? (
             <button
               onClick={() => {
@@ -591,19 +610,19 @@ export const ComprasView: React.FC = () => {
       {subseccionActiva === 'telas' && (
         <div className="bg-white border border-[#EFECE6] rounded-3xl p-6 shadow-xs space-y-5 text-[#2D2D30]">
           
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#EFECE6] dark:border-[#38383B] pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <span>🧵</span>
                   <span>Compras - Solicitudes de Ensayos para Telas</span>
                 </h3>
-                <span className="text-xs bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded">
+                <span className="text-xs bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded border border-blue-500/30">
                   {solicitudesTelasFiltradas.length} Solicitudes Registradas
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Una solicitud puede contener una o varias telas enviadas en el mismo formato. <strong className="text-blue-300">Flujo: Compras ➔ Solicitud ➔ Laboratorio ➔ Telas.</strong>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
+                Una solicitud puede contener una o varias telas enviadas en el mismo formato. <strong className="text-blue-700 dark:text-blue-300">Flujo: Compras ➔ Solicitud ➔ Laboratorio ➔ Telas.</strong>
               </p>
             </div>
 
@@ -685,9 +704,23 @@ export const ComprasView: React.FC = () => {
                           e.stopPropagation();
                           setSolicitudTelaVerDetalle(sol);
                         }}
-                        className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-bold transition-colors"
+                        className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                       >
                         Ver Documento & Detalle
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`¿Enviar la solicitud de telas ${sol.numeroSolicitud} a la papelera de reciclaje?`)) {
+                            eliminarSolicitudTelas(sol.id, 'compras');
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar solicitud de telas (enviar a papelera)"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-400" />
                       </button>
                     </div>
                   </div>
@@ -805,16 +838,16 @@ export const ComprasView: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <h3 className="text-base font-black text-white flex items-center gap-2" style={{ color: '#ffffff' }}>
                   <span>🔩</span>
-                  <span>Compras - Solicitudes de Insumos</span>
+                  <span className="text-white font-black" style={{ color: '#ffffff' }}>Compras - Solicitudes de Insumos</span>
                 </h3>
-                <span className="text-xs bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded">
+                <span className="text-xs bg-purple-500/25 text-purple-200 font-black px-2.5 py-0.5 rounded-full border border-purple-500/40">
                   {solicitudesAccFiltradas.length} Solicitudes Activas
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Una sola solicitud de insumos agrupa múltiples muestras. ⚠️ <strong className="text-purple-300">Si una referencia se repite, se conserva cada muestra de manera independiente con su ID.</strong>
+              <p className="text-xs text-slate-200 mt-1 font-medium" style={{ color: '#e2e8f0' }}>
+                Una sola solicitud de insumos agrupa múltiples muestras. ⚠️ <strong className="text-purple-300 font-bold">Si una referencia se repite, se conserva cada muestra de manera independiente con su ID.</strong>
               </p>
             </div>
 
@@ -823,7 +856,7 @@ export const ComprasView: React.FC = () => {
                 setNumeroSolAccInput(`ACC-${String(solicitudesAccesorios.length + 1).padStart(5, '0')}`);
                 setModalNuevaSolicitudAcc(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Crear Solicitud de Insumos</span>
@@ -838,7 +871,7 @@ export const ComprasView: React.FC = () => {
               value={filtroBusquedaAcc}
               onChange={(e) => setFiltroBusquedaAcc(e.target.value)}
               placeholder="Buscar por # Solicitud, Referencia (ej: MI00409922), Insumo..."
-              className="w-full pl-10 pr-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              className="w-full pl-10 pr-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-purple-500"
             />
           </div>
 
@@ -848,12 +881,12 @@ export const ComprasView: React.FC = () => {
               const estaExpandida = solicitudExpandidaId === sol.id;
 
               return (
-                <div key={sol.id} className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-lg transition-all">
+                <div key={sol.id} className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-lg transition-all text-slate-200">
                   
                   {/* Cabecera de la Solicitud */}
                   <div 
                     onClick={() => setSolicitudExpandidaId(estaExpandida ? null : sol.id)}
-                    className="p-4 bg-slate-900/80 hover:bg-slate-850 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80"
+                    className="p-4 bg-slate-900/90 hover:bg-slate-850 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800"
                   >
                     <div className="flex items-center gap-3">
                       <button className="p-1 text-slate-400 hover:text-white">
@@ -889,15 +922,15 @@ export const ComprasView: React.FC = () => {
 
                           <Badge tipo="dictamen" valor={sol.estadoGlobal} size="sm" />
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Fecha: <strong className="text-slate-300 font-mono">{sol.fechaSolicitud}</strong> • Solicitante: <strong className="text-slate-300">{sol.solicitante}</strong> • Proveedor: <strong className="text-slate-300">{sol.proveedor || 'No especificado'}</strong>
+                        <p className="text-xs text-slate-300 mt-1">
+                          Fecha: <strong className="text-white font-mono font-bold">{sol.fechaSolicitud}</strong> • Solicitante: <strong className="text-white font-bold">{sol.solicitante}</strong> • Proveedor: <strong className="text-white font-bold">{sol.proveedor || 'No especificado'}</strong>
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {sol.documentoOriginal?.nombreArchivo && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
                           <Paperclip className="w-3.5 h-3.5 text-amber-400" />
                           {sol.documentoOriginal.nombreArchivo}
                         </span>
@@ -908,10 +941,24 @@ export const ComprasView: React.FC = () => {
                           e.stopPropagation();
                           setSolicitudVerDetalle(sol);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 rounded-lg text-xs font-black transition-all shadow"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 rounded-lg text-xs font-black transition-all shadow cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>[ VER RESPUESTA DE LABORATORIO ]</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`¿Enviar la solicitud de insumos ${sol.numeroSolicitud} a la papelera de reciclaje?`)) {
+                            eliminarSolicitudAccesorios(sol.id, 'compras');
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar solicitud de insumos (enviar a papelera)"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-400" />
                       </button>
                     </div>
                   </div>
@@ -919,9 +966,9 @@ export const ComprasView: React.FC = () => {
                   {/* Tabla interna de Muestras contenidas en la solicitud */}
                   {estaExpandida && (
                     <div className="p-4 bg-slate-950/90 overflow-x-auto space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
-                        <span className="font-bold text-slate-300">Muestras enviadas a Laboratorio:</span>
-                        <span>{sol.muestras.length} muestras independientes registradas</span>
+                      <div className="flex items-center justify-between text-xs text-slate-300 pb-1">
+                        <span className="font-bold text-white">Muestras enviadas a Laboratorio:</span>
+                        <span className="text-slate-300 font-medium">{sol.muestras.length} muestras independientes registradas</span>
                       </div>
 
                       <table className="w-full text-left text-xs text-slate-200 border border-slate-800 rounded-lg overflow-hidden">

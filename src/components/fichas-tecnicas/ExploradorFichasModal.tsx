@@ -3,6 +3,9 @@ import { useQuality } from '../../context/QualityContext';
 import { useAuth } from '../../context/AuthContext';
 import { FichaTecnicaHistoricaVersionada, VersionFichaTecnica } from '../../types';
 import { FormularioFichaProveedor } from '../portal-proveedor/FormularioFichaProveedor';
+import { exportarFichaAWord, exportarFichaAPDF } from '../../utils/fichaTecnicaFormatters';
+import { FichaTecnicaFormatoCompletoModal } from './FichaTecnicaFormatoCompletoModal';
+import { procesarArchivoUniversal } from '../../utils/universalDocumentImporter';
 import * as XLSX from 'xlsx';
 import { 
   BookOpen, 
@@ -57,6 +60,13 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
   // Modales de creación/actualización con las 7 Secciones
   const [modalFormularioCompleto, setModalFormularioCompleto] = useState<boolean>(false);
   const [fichaParaVersionarForm, setFichaParaVersionarForm] = useState<FichaTecnicaHistoricaVersionada | null>(null);
+  
+  // Modal de visualización en Formato Completo Oficial STF GROUP (Word / PDF)
+  const [modalFormatoCompletoAbierto, setModalFormatoCompletoAbierto] = useState<boolean>(false);
+  const [fichaParaFormatoCompleto, setFichaParaFormatoCompleto] = useState<FichaTecnicaHistoricaVersionada | null>(null);
+
+  // Estado de carga para importación universal
+  const [cargandoArchivo, setCargandoArchivo] = useState<boolean>(false);
 
   if (!abierto) return null;
 
@@ -84,7 +94,30 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
   const versionActiva: VersionFichaTecnica | undefined = fichaActiva?.historialVersiones?.[versionSeleccionadaIndex] || 
     fichaActiva?.historialVersiones?.[(fichaActiva?.historialVersiones?.length || 1) - 1];
 
-  // Carga masiva de Excel de Fichas Técnicas
+  // Manejo de Importación de Cualquier Documento o Imagen (Excel, Word, PDF, Imagen)
+  const handleImportarCualquierDocumento = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCargandoArchivo(true);
+    try {
+      const res = await procesarArchivoUniversal(file, usuario?.displayName || 'Importación Documento');
+      if (res.exito && res.fichasCreadas.length > 0) {
+        res.fichasCreadas.forEach((f) => guardarFichaTecnicaProveedor(f));
+        setFichaSeleccionada(res.fichasCreadas[0]);
+        alert(`✓ ¡Documento importado con éxito!\n\nFormato detectado: ${res.formato}\nArchivo: ${file.name}\n${res.mensaje}`);
+      } else {
+        alert(`Aviso: ${res.mensaje}`);
+      }
+    } catch (err: any) {
+      alert(`Error al procesar el archivo: ${err.message || err}`);
+    } finally {
+      setCargandoArchivo(false);
+      e.target.value = '';
+    }
+  };
+
+  // Carga de Excel de Fichas Técnicas (Manejo inteligente de Ficha Única vs Múltiples)
   const handleCargarExcelFichas = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -95,17 +128,228 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
         const data = evt.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
-        const rawJson: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+        const sheet = workbook.Sheets[sheetName];
 
-        const fichasImportadas: FichaTecnicaHistoricaVersionada[] = rawJson.map((row, idx) => {
+        // 1. Obtener filas crudas como arreglos para detectar estructura vertical / clave-valor
+        const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+        // Normalizador de texto para claves
+        const limpiarClave = (str: string) => 
+          str.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[:#=\-\t\s_]+/g, ' ')
+            .trim();
+
+        // 2. Extraer mapa de clave-valor vertical
+        const mapaClaves: Record<string, string> = {};
+        let conteoClavesDetectadas = 0;
+
+        const regexClavesConocidas = /(?:proveedor|fabricante|molino|empresa|contacto|email|correo|telefono|referencia|ref proveedor|codigo fabrica|codigo ft|codigo|tela|articulo|nombre|composicion|fibra|ancho|peso|gramaje|gsm|ligamento|tejido|densidad|urdimbre|trama|encogimiento|solidez|lavado|cuidados|lote|color|po|oc)/i;
+
+        rawRows.forEach((fila) => {
+          if (!Array.isArray(fila) || fila.length === 0) return;
+          const col0 = String(fila[0] ?? '').trim();
+          const col1 = String(fila[1] ?? '').trim();
+          const col2 = String(fila[2] ?? '').trim();
+
+          if (col0 && regexClavesConocidas.test(col0)) {
+            conteoClavesDetectadas++;
+            const claveNorm = limpiarClave(col0);
+            mapaClaves[claveNorm] = col1 || col2 || '';
+          } else if (col1 && regexClavesConocidas.test(col1)) {
+            conteoClavesDetectadas++;
+            const claveNorm = limpiarClave(col1);
+            mapaClaves[claveNorm] = col2 || '';
+          }
+        });
+
+        const buscarValorVertical = (...patrones: RegExp[]): string => {
+          for (const p of patrones) {
+            for (const [k, v] of Object.entries(mapaClaves)) {
+              if (p.test(k) && v) return v;
+            }
+          }
+          return '';
+        };
+
+        const nombreLimpio = file.name.replace(/\.[^/.]+$/, '').replace(/ficha\s*t[eé]cnica/i, '').replace(/[-_]+/g, ' ').trim();
+
+        // 3. Si detecta 3 o más campos clave en formato vertical, es UN SOLO DOCUMENTO DE FICHA TÉCNICA
+        if (conteoClavesDetectadas >= 3) {
+          const proveedor = (buscarValorVertical(/proveedor|fabricante|molino|empresa/i) || 'PROVEEDOR GENERAL').trim();
+          const referencia = (buscarValorVertical(/referencia|articulo|nombre|tela/i) || nombreLimpio || 'TELA PROVEEDOR').trim();
+          const referenciaProveedor = (buscarValorVertical(/ref.*prov|codigo.*fab|codigo.*prov/i) || referencia).trim();
+          const codigoFT = (buscarValorVertical(/codigo.*ft|codigo/i) || `FT-${Date.now().toString().slice(-6)}`).trim();
+          const composicion = (buscarValorVertical(/composicion|fibra/i) || '100% Textil').trim();
+          const gramajeStr = buscarValorVertical(/gramaje|peso|gsm/i);
+          const gramaje = parseFloat(gramajeStr.replace(/[^\d.]/g, '') || '200') || 200;
+          const anchoStr = buscarValorVertical(/ancho/i);
+          const ancho = parseFloat(anchoStr.replace(/[^\d.]/g, '') || '1.48') || 1.48;
+          const encLargo = parseFloat(buscarValorVertical(/encogimiento.*largo|encl/i).replace(/[^\d.-]/g, '') || '-2.5') || -2.5;
+          const encAncho = parseFloat(buscarValorVertical(/encogimiento.*ancho|enca/i).replace(/[^\d.-]/g, '') || '-3.0') || -3.0;
+
+          const fichaUnica: FichaTecnicaHistoricaVersionada = {
+            id: `ft-doc-${Date.now()}`,
+            codigoFT,
+            referencia,
+            referenciaProveedor,
+            proveedor,
+            contactoProveedor: buscarValorVertical(/contacto|email|correo/i),
+            paisOrigen: buscarValorVertical(/pais/i) || 'Colombia',
+            versionActual: 1,
+            estadoRevision: 'APROBADA_HISTORICO',
+            createdAt: new Date().toISOString().split('T')[0],
+            createdBy: usuario?.displayName || 'Importación Documento',
+            updatedAt: new Date().toISOString().split('T')[0],
+            updatedBy: usuario?.displayName || 'Importación Documento',
+            documentoOriginal: {
+              nombreArchivo: file.name,
+              tipo: 'EXCEL',
+              fechaCarga: new Date().toISOString().split('T')[0]
+            },
+            historialVersiones: [
+              {
+                version: 1,
+                fechaVersion: new Date().toISOString().split('T')[0],
+                creadoPor: usuario?.displayName || 'Importación Documento',
+                activo: true,
+                cambiosRespectoAnterior: 'Carga oficial de Ficha Técnica del Fabricante.',
+                nombreArchivoFT: file.name,
+                especificaciones: {
+                  nombreEmpresa: proveedor,
+                  contactoTecnico: buscarValorVertical(/contacto/i),
+                  emailContacto: buscarValorVertical(/email|correo/i),
+                  telefonoWhatsapp: buscarValorVertical(/telefono|tel|celular/i),
+                  paisEmpresa: buscarValorVertical(/pais/i) || 'Colombia',
+                  stfPoNumber: buscarValorVertical(/po|oc|orden.*compra/i) || 'OAC 1107',
+                  fechaProduccion: new Date().toISOString().split('T')[0],
+                  codigoMT: codigoFT,
+                  referenciaSTF: referencia,
+                  referenciaProveedor: referenciaProveedor,
+                  codigoFabrica: referenciaProveedor,
+                  nombreComercialTela: referencia,
+                  molinoFabricante: proveedor,
+                  paisOrigen: buscarValorVertical(/pais/i) || 'Colombia',
+                  numeroLoteProduccion: buscarValorVertical(/lote/i) || 'LOT-2026-01',
+                  colorShade: buscarValorVertical(/color|shade/i) || '000 ESTÁNDAR',
+                  subpartidaArancelaria: buscarValorVertical(/subpartida/i) || '5407.52.00.00',
+                  certificadoOrigen: buscarValorVertical(/certificado/i) || 'CO-2026-001',
+                  composicion,
+                  composicionPorcentual: composicion,
+                  tipoFibraFilamento: 'Filamento Continuo',
+                  tipoFibraTexturizado: 'Normal',
+                  tituloHiloUrdimbre: buscarValorVertical(/titulo.*urdimbre/i) || '30/1 Ne',
+                  tituloHiloTrama: buscarValorVertical(/titulo.*trama/i) || '30/1 Ne',
+                  sentidoTorsion: 'Z',
+                  mezclaIntima: composicion,
+                  anchoTotalM: ancho + 0.04,
+                  anchoUtilM: ancho,
+                  gramajeDeclaradoGsm: gramaje,
+                  pesoLinealGsm: Math.round(gramaje * ancho),
+                  rendimientoMkg: parseFloat((1000 / (gramaje * ancho)).toFixed(2)),
+                  espesorMm: 0.40,
+                  tipoTejido: 'Plano',
+                  tipoLigamento: buscarValorVertical(/ligamento|tejido/i) || 'Tafetán',
+                  densidadUrdimbreHilosCm: 36,
+                  densidadTramaPasadasCm: 28,
+                  acabadosTextiles: 'Sanforizado + Suavizado',
+                  acabadoColorTintoreria: 'Teñido en Pieza',
+                  encogimientoLargoMax: encLargo,
+                  encogimientoAnchoMax: encAncho,
+                  viroMax: 1.5,
+                  solidezLavadoMin: 4.0,
+                  solidezFroteSecoMin: 4.0,
+                  solidezFroteHumedoMin: 3.5,
+                  lavadoSugerido: buscarValorVertical(/lavado|cuidado/i) || 'Lavado doméstico máx. 40°C.',
+                  observacionesFabricante: `Ficha técnica importada desde el documento ${file.name}.`
+                }
+              }
+            ]
+          };
+
+          guardarFichaTecnicaProveedor(fichaUnica);
+          alert(`✓ ¡Ficha Técnica "${referencia}" (${proveedor}) importada exitosamente como 1 solo documento!`);
+          return;
+        }
+
+        // 4. Si es formato tabular con múltiples filas:
+        const rawJson: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        
+        // Agrupar filas válidas por proveedor + referencia para evitar duplicar la misma ficha 27 veces
+        const mapaTelasUnicas = new Map<string, any>();
+
+        rawJson.forEach((row, idx) => {
           const rowNorm: Record<string, any> = {};
           Object.keys(row).forEach((k) => {
             rowNorm[k.trim().toUpperCase()] = row[k];
           });
 
-          const proveedor = String(rowNorm['PROVEEDOR'] || rowNorm['FABRICANTE'] || rowNorm['MOLINO'] || 'PROVEEDOR GENERAL').trim();
-          const referencia = String(rowNorm['NOMBRE'] || rowNorm['TELA'] || rowNorm['REFERENCIA'] || `TELA-${idx + 1}`).trim();
-          const referenciaProveedor = String(rowNorm['REF PROVEEDOR'] || rowNorm['REFERENCIA PROVEEDOR'] || rowNorm['CODIGO PROVEEDOR'] || rowNorm['CODIGO FABRICA'] || `REF-PROV-${idx + 1}`).trim();
+          // Solo filas con nombre o referencia explícita (NO inventar TELA-1, TELA-2...)
+          const refReal = String(rowNorm['NOMBRE'] || rowNorm['TELA'] || rowNorm['REFERENCIA'] || rowNorm['ARTICULO'] || '').trim();
+          if (!refReal) return;
+
+          const provReal = String(rowNorm['PROVEEDOR'] || rowNorm['FABRICANTE'] || rowNorm['MOLINO'] || 'PROVEEDOR GENERAL').trim();
+          const clave = `${provReal.toLowerCase()}::${refReal.toLowerCase()}`;
+
+          if (!mapaTelasUnicas.has(clave)) {
+            mapaTelasUnicas.set(clave, { rowNorm, refReal, provReal, idx });
+          }
+        });
+
+        if (mapaTelasUnicas.size === 0) {
+          // Si no se detectaron referencias tabulares claras, crear 1 sola ficha con el nombre del archivo
+          const fichaUnicaFallback: FichaTecnicaHistoricaVersionada = {
+            id: `ft-doc-${Date.now()}`,
+            codigoFT: `FT-${Date.now().toString().slice(-6)}`,
+            referencia: nombreLimpio || 'TELA PROVEEDOR',
+            referenciaProveedor: nombreLimpio || 'TELA PROVEEDOR',
+            proveedor: 'PROVEEDOR GENERAL',
+            contactoProveedor: '',
+            paisOrigen: 'Colombia',
+            versionActual: 1,
+            estadoRevision: 'APROBADA_HISTORICO',
+            createdAt: new Date().toISOString().split('T')[0],
+            createdBy: usuario?.displayName || 'Importación Documento',
+            updatedAt: new Date().toISOString().split('T')[0],
+            updatedBy: usuario?.displayName || 'Importación Documento',
+            documentoOriginal: {
+              nombreArchivo: file.name,
+              tipo: 'EXCEL',
+              fechaCarga: new Date().toISOString().split('T')[0]
+            },
+            historialVersiones: [
+              {
+                version: 1,
+                fechaVersion: new Date().toISOString().split('T')[0],
+                creadoPor: usuario?.displayName || 'Importación Documento',
+                activo: true,
+                cambiosRespectoAnterior: 'Carga inicial desde documento.',
+                nombreArchivoFT: file.name,
+                especificaciones: {
+                  nombreEmpresa: 'PROVEEDOR GENERAL',
+                  referenciaSTF: nombreLimpio || 'TELA PROVEEDOR',
+                  referenciaProveedor: nombreLimpio || 'TELA PROVEEDOR',
+                  composicion: '100% Textil',
+                  anchoUtilM: 1.48,
+                  gramajeDeclaradoGsm: 200,
+                  encogimientoLargoMax: -2.5,
+                  encogimientoAnchoMax: -3.0,
+                  viroMax: 1.5,
+                  solidezLavadoMin: 4.0,
+                  solidezFroteSecoMin: 4.0,
+                  solidezFroteHumedoMin: 3.5
+                }
+              }
+            ]
+          };
+
+          guardarFichaTecnicaProveedor(fichaUnicaFallback);
+          alert(`✓ ¡Ficha Técnica "${fichaUnicaFallback.referencia}" importada exitosamente como 1 solo documento!`);
+          return;
+        }
+
+        const fichasImportadas: FichaTecnicaHistoricaVersionada[] = Array.from(mapaTelasUnicas.values()).map(({ rowNorm, refReal, provReal, idx }) => {
+          const referenciaProveedor = String(rowNorm['REF PROVEEDOR'] || rowNorm['REFERENCIA PROVEEDOR'] || rowNorm['CODIGO PROVEEDOR'] || rowNorm['CODIGO FABRICA'] || refReal).trim();
           const codigoFT = String(rowNorm['CODIGO FT'] || rowNorm['CODIGO'] || `FT-${String(idx + 100).padStart(6, '0')}`).trim();
           const composicion = String(rowNorm['COMPOSICION'] || rowNorm['COMPOSICIÓN'] || '100% Textil').trim();
           const gramaje = parseFloat(rowNorm['GRAMAJE'] || rowNorm['PESO'] || rowNorm['GSM'] || 200) || 200;
@@ -114,9 +358,9 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
           return {
             id: `ft-import-${Date.now()}-${idx}`,
             codigoFT,
-            referencia,
+            referencia: refReal,
             referenciaProveedor,
-            proveedor,
+            proveedor: provReal,
             contactoProveedor: String(rowNorm['CONTACTO'] || rowNorm['EMAIL'] || ''),
             paisOrigen: String(rowNorm['PAIS'] || rowNorm['PAIS ORIGEN'] || 'Colombia'),
             versionActual: 1,
@@ -139,7 +383,7 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                 cambiosRespectoAnterior: 'Carga inicial desde base de datos de proveedores.',
                 nombreArchivoFT: file.name,
                 especificaciones: {
-                  nombreEmpresa: proveedor,
+                  nombreEmpresa: provReal,
                   contactoTecnico: String(rowNorm['CONTACTO'] || rowNorm['CONTACTO TECNICO'] || ''),
                   emailContacto: String(rowNorm['EMAIL'] || ''),
                   telefonoWhatsapp: String(rowNorm['TELEFONO'] || rowNorm['WHATSAPP'] || ''),
@@ -147,11 +391,11 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                   stfPoNumber: String(rowNorm['PO'] || rowNorm['OC'] || rowNorm['STF PO'] || 'OAC 1107'),
                   fechaProduccion: String(rowNorm['FECHA PRODUCCION'] || new Date().toISOString().split('T')[0]),
                   codigoMT: String(rowNorm['CODIGO MT'] || rowNorm['REF STF'] || codigoFT),
-                  referenciaSTF: referencia,
+                  referenciaSTF: refReal,
                   referenciaProveedor: referenciaProveedor,
                   codigoFabrica: String(rowNorm['CODIGO FABRICA'] || referenciaProveedor),
-                  nombreComercialTela: referencia,
-                  molinoFabricante: proveedor,
+                  nombreComercialTela: refReal,
+                  molinoFabricante: provReal,
                   paisOrigen: String(rowNorm['PAIS ORIGEN'] || rowNorm['PAIS'] || 'Colombia'),
                   numeroLoteProduccion: String(rowNorm['LOTE'] || rowNorm['NUMERO LOTE'] || 'LOT-2026-01'),
                   colorShade: String(rowNorm['COLOR'] || rowNorm['SHADE'] || '000 NEGRO'),
@@ -159,8 +403,8 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                   certificadoOrigen: String(rowNorm['CERTIFICADO'] || 'CO-2026-001'),
                   composicion,
                   composicionPorcentual: composicion,
-                  tipoFibraFilamento: String(rowNorm['TIPO FIBRA'] || 'Filamento Continuo'),
-                  tipoFibraTexturizado: String(rowNorm['TEXTURIZADO'] || 'Normal'),
+                  tipoFibraFilamento: 'Filamento Continuo',
+                  tipoFibraTexturizado: 'Normal',
                   tituloHiloUrdimbre: String(rowNorm['TITULO URDIMBRE'] || '30/1 Ne'),
                   tituloHiloTrama: String(rowNorm['TITULO TRAMA'] || '30/1 Ne'),
                   sentidoTorsion: 'Z',
@@ -184,7 +428,7 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                   solidezFroteSecoMin: 4.0,
                   solidezFroteHumedoMin: 3.5,
                   lavadoSugerido: 'Lavado doméstico máx. 40°C.',
-                  observacionesFabricante: 'Ficha importada masivamente desde Excel.'
+                  observacionesFabricante: 'Ficha importada desde archivo Excel.'
                 }
               }
             ]
@@ -192,7 +436,7 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
         });
 
         fichasImportadas.forEach(f => guardarFichaTecnicaProveedor(f));
-        alert(`¡${fichasImportadas.length} Fichas Técnicas importadas y añadidas a la Base Histórica!`);
+        alert(`¡${fichasImportadas.length} Ficha(s) Técnica(s) importada(s) exitosamente a la Base Histórica!`);
       } catch (err) {
         alert('Error al leer el archivo Excel.');
       }
@@ -238,10 +482,20 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2D2D30] hover:bg-[#424246] text-[#F0DCA8] border border-[#AA9E80]/40 rounded-xl text-xs font-bold transition-colors cursor-pointer">
-              <Upload className="w-3.5 h-3.5 text-[#C6A466]" />
-              <span>Importar Excel</span>
-              <input type="file" accept=".xlsx,.xls" onChange={handleCargarExcelFichas} className="hidden" />
+            {/* Botón Único Unificado: Importar Todos los Formatos de Documentos e Imágenes (Excel, Word, PDF, Imagen) */}
+            <label 
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-700 hover:from-blue-600 hover:to-cyan-600 text-white font-extrabold text-xs rounded-xl shadow-md border border-cyan-400/40 transition-all cursor-pointer active:scale-95 shrink-0" 
+              title="Importar Ficha Técnica desde cualquier formato: Excel (.xlsx, .xls, .csv), Word (.docx, .doc), PDF (.pdf) o Imágenes (.png, .jpg, .webp)"
+            >
+              <Upload className="w-4 h-4 text-cyan-200 animate-pulse" />
+              <span>{cargandoArchivo ? 'Leyendo documento...' : 'Importar Ficha (Excel, Word, PDF, Imagen)'}</span>
+              <input 
+                type="file" 
+                accept=".xlsx,.xls,.csv,.doc,.docx,.pdf,image/*,.png,.jpg,.jpeg,.webp" 
+                onChange={handleImportarCualquierDocumento} 
+                disabled={cargandoArchivo}
+                className="hidden" 
+              />
             </label>
 
             <button
@@ -343,6 +597,24 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                       <span className="truncate">{ficha.documentoOriginal.nombreArchivo}</span>
                     </div>
                   )}
+
+                  <div className="mt-2.5 pt-2 border-t border-[#424246]/60 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFichaSeleccionada(ficha);
+                        setVersionSeleccionadaIndex(ficha.historialVersiones.length - 1);
+                        setFichaParaFormatoCompleto(ficha);
+                        setModalFormatoCompletoAbierto(true);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl text-[11px] font-bold border border-amber-500/30 transition-all cursor-pointer"
+                      title="Ver ficha técnica en formato completo oficial STF GROUP (con opciones de exportación Word y PDF)"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Ver Formato Completo STF</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -375,7 +647,20 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFichaParaFormatoCompleto(fichaActiva);
+                        setModalFormatoCompletoAbierto(true);
+                      }}
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/40 text-amber-200 border border-amber-500/50 rounded-lg text-xs font-black flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                      title="Abrir en formato completo idéntico al PDF oficial de STF GROUP (Word y PDF)"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Ver Formato Completo STF</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -638,6 +923,18 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
               />
             </div>
           </div>
+        )}
+
+        {/* MODAL DE FORMATO COMPLETO OFICIAL STF GROUP */}
+        {modalFormatoCompletoAbierto && (
+          <FichaTecnicaFormatoCompletoModal
+            ficha={fichaParaFormatoCompleto || fichaActiva}
+            version={versionActiva}
+            onCerrar={() => {
+              setModalFormatoCompletoAbierto(false);
+              setFichaParaFormatoCompleto(null);
+            }}
+          />
         )}
 
       </div>

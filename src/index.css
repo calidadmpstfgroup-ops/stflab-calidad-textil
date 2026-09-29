@@ -1,67 +1,101 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --gris: #E5E4DF;
-  --gris-alto: #F0EFEB;
-  --crema: #F5F4F0;
-  --crema-alta: #F0EFEB;
-  --moca: #6B6256;
-  --negro: #2D2D30;
-  --dorado: #AA9E80;
-  --dorado-brillo: #D6CDB8;
-  --linea: #E2E0D8;
+  /* Paleta Base STFLAB (Inspirada en el diseño de referencia: Azul/Turquesa moderno) */
+  --stf-cyan: #00b4d8;
+  --stf-cyan-bright: #00c0f0;
+  --stf-cyan-hover: #0096c7;
+  --stf-cyan-light: #e0f2fe;
+  --stf-navy-dark: #080e1e;
+  --stf-navy-surface: #0f1b35;
+  --stf-navy-elevated: #132247;
+  --stf-navy-border: #1e3461;
+  --stf-text-dark: #0f172a;
+  --stf-text-light: #f8fafc;
+  --stf-text-muted: #64748b;
+  --stf-text-muted-dark: #94a3b8;
 
-  /* Escala neutra exacta según muestra de diseño */
-  --neutro-50: #FBFBFA;   /* Fondo blanco roto */
-  --neutro-100: #F5F4F0;  /* = crema / canvas principal */
-  --neutro-200: #E5E4DF;  /* = gris */
-  --neutro-300: #D8D6CF;  /* bordes de gris */
-  --neutro-400: #A69E90;  /* texto terciario */
-  --neutro-500: #8A8172;  /* texto secundario suave */
-  --neutro-600: #6B6256;  /* = moca, texto secundario estándar */
-  --neutro-700: #4F473D;  /* moca oscuro */
-  --neutro-800: #424246;  /* negro suavizado */
-  --neutro-900: #2D2D30;  /* = negro principal */
-
-  /* Estados desaturados según muestra de diseño */
-  --exito: #485C3E;
-  --exito-bg: #EEF3EA;
-  --exito-border: #94A786;
+  /* Estados semánticos */
+  --exito: #10b981;
+  --exito-bg: #ecfdf5;
+  --exito-border: #a7f3d0;
   
-  --advertencia: #7A6428;
-  --advertencia-bg: #F9F3E3;
-  --advertencia-border: #DEC987;
+  --advertencia: #f59e0b;
+  --advertencia-bg: #fffbeb;
+  --advertencia-border: #fde68a;
 
-  --error: #8C3D35;
-  --error-bg: #FAF0EC;
-  --error-border: #DBA097;
+  --error: #f43f5e;
+  --error-bg: #fff1f2;
+  --error-border: #fecdd3;
 
-  --info: #2E5875;
-  --info-bg: #EBF2F7;
-  --info-border: #9BBCD6;
+  --info: #0ea5e9;
+  --info-bg: #f0f9ff;
+  --info-border: #bae6fd;
 
-  --nuevo: #AA9E80;
-  --nuevo-bg: #F9F3E3;
+  --morado: #8b5cf6;
+  --morado-bg: #f5f3ff;
+  --morado-border: #ddd6fe;
 
-  /* Radios de esquina con esquinas suaves (rounded-3xl) */
-  --radius-sm: 0.625rem;  /* 10px */
-  --radius-md: 1rem;      /* 16px */
-  --radius-lg: 1.5rem;    /* 24px - rounded-3xl */
+  /* Mapeo de compatibilidad con tokens anteriores para que nada se rompa */
+  --gris: #f1f5f9;
+  --gris-alto: #ffffff;
+  --crema: #f3f6fb;
+  --crema-alta: #ffffff;
+  --moca: #00b4d8;
+  --negro: #0f172a;
+  --dorado: #00b4d8;
+  --dorado-brillo: #38bdf8;
+  --linea: #e2e8f0;
 
-  /* Sombras cálidas ultra suaves */
-  --shadow-sm: 0 1px 3px 0 rgba(33, 30, 26, 0.04);
-  --shadow-md: 0 4px 12px -2px rgba(33, 30, 26, 0.06), 0 2px 4px -2px rgba(33, 30, 26, 0.04);
-  --shadow-lg: 0 12px 28px -6px rgba(33, 30, 26, 0.09), 0 4px 10px -4px rgba(33, 30, 26, 0.05);
+  --neutro-50: #ffffff;
+  --neutro-100: #f8fafc;
+  --neutro-200: #f1f5f9;
+  --neutro-300: #e2e8f0;
+  --neutro-400: #94a3b8;
+  --neutro-500: #64748b;
+  --neutro-600: #475569;
+  --neutro-700: #334155;
+  --neutro-800: #1e293b;
+  --neutro-900: #0f172a;
+
+  --radius-sm: 0.5rem;    /* 8px */
+  --radius-md: 0.875rem;  /* 14px */
+  --radius-lg: 1.25rem;   /* 20px */
+  --radius-xl: 1.5rem;    /* 24px */
+
+  /* Sombras suaves de alta definición */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+}
+
+/* =========================================================
+   SISTEMA DE TAMAÑO DE FUENTE PROPORCIONAL (PEQUEÑA, MEDIANA, GRANDE)
+   Control tipográfico armónico y proporcionado para todo el sistema
+   ========================================================= */
+
+html[data-font-size="pequena"],
+html.font-pequena {
+  font-size: 14px !important;
+}
+
+html[data-font-size="mediana"],
+html.font-mediana {
+  font-size: 16px !important;
+}
+
+html[data-font-size="grande"],
+html.font-grande {
+  font-size: 17.5px !important;
 }
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Inter", sans-serif;
-  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
-  /* Custom Studio F Lab Palette mapping over the existing brand classes */
   --color-crema: var(--crema);
   --color-crema-alta: var(--crema-alta);
   --color-moca: var(--moca);
@@ -70,7 +104,6 @@
   --color-dorado-brillo: var(--dorado-brillo);
   --color-linea: var(--linea);
 
-  /* Escala neutra ampliada, usable como bg-neutro-500, text-neutro-700, etc. */
   --color-neutro-50: var(--neutro-50);
   --color-neutro-100: var(--neutro-100);
   --color-neutro-200: var(--neutro-200);
@@ -82,8 +115,6 @@
   --color-neutro-800: var(--neutro-800);
   --color-neutro-900: var(--neutro-900);
 
-  /* Radios y sombras propios, usables como rounded-elegant-sm/md/lg y
-     shadow-elegant-sm/md/lg -- ver DESIGN.md para cuándo usar cada uno. */
   --radius-elegant-sm: var(--radius-sm);
   --radius-elegant-md: var(--radius-md);
   --radius-elegant-lg: var(--radius-lg);
@@ -99,208 +130,91 @@
   --color-error-bg: var(--error-bg);
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
-  --color-nuevo: var(--nuevo);
-  --color-nuevo-bg: var(--nuevo-bg);
 
-  /* Map old brand colors so the rest of the application matches instantly */
-  --color-brand-950: var(--negro);
-  --color-brand-900: #3A3A3D;
-  --color-brand-800: var(--moca);
-  --color-brand-gold: var(--dorado);
-  --color-brand-gold-light: var(--crema-alta);
-  --color-brand-gold-dark: var(--moca);
+  --color-brand-950: #080e1e;
+  --color-brand-900: #0f1b35;
+  --color-brand-800: #132247;
+  --color-brand-gold: #00b4d8;
+  --color-brand-gold-light: #e0f2fe;
+  --color-brand-gold-dark: #0096c7;
   --color-restful-bg: var(--crema);
-  --color-restful-card: var(--crema-alta);
-
-  /* Map default Tailwind semantic color variables to the desaturated studio-f-lab tones */
-  --color-emerald-50: var(--exito-bg);
-  --color-emerald-100: var(--exito-bg);
-  --color-emerald-200: #E3E7D9;
-  --color-emerald-500: var(--exito);
-  --color-emerald-600: var(--exito);
-  --color-emerald-700: #5F6E54;
-  --color-emerald-800: #4B593F;
-
-  --color-rose-50: var(--error-bg);
-  --color-rose-100: var(--error-bg);
-  --color-rose-200: #EAD9D2;
-  --color-rose-500: var(--error);
-  --color-rose-600: var(--error);
-  --color-rose-700: #966C5C;
-
-  --color-amber-50: var(--advertencia-bg);
-  --color-amber-100: var(--advertencia-bg);
-  --color-amber-200: #EAE0C6;
-  --color-amber-500: var(--advertencia);
-  --color-amber-600: var(--advertencia);
-  --color-amber-700: #8A7444;
-
-  --color-sky-50: var(--info-bg);
-  --color-sky-100: var(--info-bg);
-  --color-sky-200: #DDE4E9;
-  --color-sky-500: var(--info);
-  --color-sky-600: var(--info);
-  --color-sky-700: #647684;
-
-  /* Map default Indigo (royal blue) to desaturated laboratory slate/moca */
-  --color-indigo-50: var(--info-bg);
-  --color-indigo-100: var(--info-bg);
-  --color-indigo-150: #DDE4E9;
-  --color-indigo-200: #DDE4E9;
-  --color-indigo-300: #8A9BAA;
-  --color-indigo-400: #647684;
-  --color-indigo-500: var(--info);
-  --color-indigo-600: #647684;
-  --color-indigo-700: #505E6B;
-  --color-indigo-800: #3D4852;
-  --color-indigo-900: #2A323A;
-  --color-indigo-950: var(--negro);
-
-  /* Map default Blue to desaturated laboratory slate */
-  --color-blue-50: var(--info-bg);
-  --color-blue-100: var(--info-bg);
-  --color-blue-200: #DDE4E9;
-  --color-blue-500: var(--info);
-  --color-blue-600: #647684;
-  --color-blue-700: #505E6B;
-  --color-blue-850: #3D4852;
-  --color-blue-900: #2A323A;
+  --color-restful-card: #ffffff;
 }
 
 /* Base style smoothing */
 body {
-  background-color: #F4F3ED;
+  background-color: #f3f6fb;
   font-family: var(--font-sans);
-  color: #2D2D30;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Shimmer animation for "Nuevo Lote" / Highlighted badges */
-@keyframes shimmer {
-  0% { background-position: 120% 0; }
-  50% { background-position: 0% 0; }
-  100% { background-position: -120% 0; }
-}
-
-.animate-shimmer {
-  background: linear-gradient(100deg, var(--nuevo) 0%, var(--dorado-brillo) 45%, var(--nuevo) 60%);
-  background-size: 220% 100%;
-  animation: shimmer 4.5s ease-in-out infinite;
-}
-
-/* Custom animation for gentle fade-in of content panels */
+/* Animación de entrada suave */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Ping Animation for status dots */
-@keyframes custom-ping {
-  0% { opacity: 0.35; transform: scale(0.6); }
-  70% { opacity: 0; transform: scale(1.4); }
-  100% { opacity: 0; }
-}
-
-.dot-ping {
-  position: relative;
-}
-.dot-ping::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1px solid currentColor;
-  opacity: 0;
-  animation: custom-ping 3.4s ease-out infinite;
-}
-
-/* Monospace text for technical numbers */
-.data-mono {
-  font-family: var(--font-mono);
-  font-weight: 500;
-}
-
-/* Custom keyframes for animated notification badges (Bages Animados) */
-@keyframes badge-ring {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  5% { transform: rotate(15deg) scale(1.15); }
-  10% { transform: rotate(-12deg) scale(1.15); }
-  15% { transform: rotate(10deg) scale(1.1); }
-  20% { transform: rotate(-8deg) scale(1.1); }
-  25% { transform: rotate(6deg) scale(1.05); }
-  30% { transform: rotate(-4deg) scale(1.05); }
-  35% { transform: rotate(2deg) scale(1); }
-  40% { transform: rotate(0deg) scale(1); }
-}
-
-.animate-badge-ring {
-  animation: badge-ring 2.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
-  transform-origin: center bottom;
-}
-
-/* Barra deslizante vertical elegante y visible al costado */
+/* Scrollbar refinada estilo laboratorio */
 .custom-vertical-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--moca) var(--crema);
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
 .custom-vertical-scroll::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 .custom-vertical-scroll::-webkit-scrollbar-track {
-  background: var(--crema);
-  border-radius: 8px;
+  background: transparent;
 }
 .custom-vertical-scroll::-webkit-scrollbar-thumb {
-  background: var(--moca);
-  border-radius: 8px;
-  border: 2px solid var(--crema);
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
 }
 .custom-vertical-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--negro);
+  background: rgba(148, 163, 184, 0.6);
 }
 
-/* ==========================================
-   STFLAB THEME SWITCHER (MODO CLARO / MODO OSCURO)
-   ========================================== */
+/* =========================================================
+   STFLAB THEME ENGINE: MODO OSCURO (Azul Marino Profundo)
+   Exactamente como la mitad inferior de la imagen de referencia
+   ========================================================= */
 
-/* Dark Mode Defaults (Default & html.dark) */
 html.dark body,
 html.dark #root,
 html.dark main {
-  background-color: #1E1E21 !important;
-  color: #FBF8F2 !important;
+  background-color: #080e1e !important;
+  color: #f8fafc !important;
 }
 
+/* Encabezado en modo oscuro */
 html.dark header {
-  background-color: #2B2B2E !important;
-  border-color: #424246 !important;
+  background-color: #080e1e !important;
+  border-color: #17254e !important;
 }
 
 html.dark header h1 {
-  color: #FBF8F2 !important;
+  color: #f8fafc !important;
 }
 
 html.dark header p,
-html.dark header span:not(.bg-\[\#C6A466\]) {
-  color: #AA9E80 !important;
+html.dark header span:not([class*="bg-cyan"]):not([class*="bg-sky"]):not([class*="bg-rose"]):not([class*="bg-emerald"]) {
+  color: #94a3b8 !important;
 }
 
-html.dark header img,
-html.dark aside img {
-  filter: none !important;
-}
-
+/* Menú lateral (Sidebar) en modo oscuro */
 html.dark aside {
-  background-color: #252528 !important;
-  border-color: #424246 !important;
-  color: #FBF8F2 !important;
+  background-color: #0b1329 !important;
+  border-color: #17254e !important;
+  color: #f8fafc !important;
 }
 
-/* Forzar que en Modo Oscuro TODO contenedor o tarjeta con fondo claro se vuelva Carbón Oscuro (#2B2B2E / #252528) */
+/* Tarjetas y Contenedores en Modo Oscuro: Azul Marino #0f1b35 con bordes #1e3461 */
 html.dark .bg-white,
 html.dark .bg-\[\#FFFFFF\],
 html.dark .bg-\[\#FBF8F2\],
@@ -311,20 +225,28 @@ html.dark .bg-\[\#F0EFEB\],
 html.dark .bg-\[\#EFECE6\],
 html.dark .bg-\[\#E5E4DF\],
 html.dark .bg-\[\#E3D9C7\],
+html.dark .bg-\[\#2B2B2E\],
+html.dark .bg-\[\#2D2D30\],
+html.dark .bg-\[\#1E1E21\],
+html.dark .bg-\[\#252528\],
 html.dark .bg-gray-50,
 html.dark .bg-slate-50,
 html.dark .bg-slate-100,
 html.dark .bg-stone-50,
 html.dark .bg-zinc-50,
 html.dark .bg-amber-50 {
-  background-color: #2B2B2E !important;
-  color: #FBF8F2 !important;
+  background-color: #0f1b35 !important;
+  color: #f8fafc !important;
 }
 
-/* Tarjetas y subpaneles anidados en Modo Oscuro */
-html.dark .bg-\[\#F8FAFC\] {
-  background-color: #252528 !important;
-  color: #FBF8F2 !important;
+/* Paneles internos / Subtarjetas en modo oscuro */
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F1F5F9\],
+html.dark .bg-\[\#1E1E24\],
+html.dark .bg-\[\#141417\],
+html.dark .bg-\[\#242428\] {
+  background-color: #132247 !important;
+  color: #f8fafc !important;
 }
 
 /* Bordes en Modo Oscuro */
@@ -334,16 +256,23 @@ html.dark .border-\[\#E2E0D8\],
 html.dark .border-\[\#E3D9C7\],
 html.dark .border-\[\#E2E8F0\],
 html.dark .border-\[\#CBD5E1\],
+html.dark .border-\[\#424246\],
+html.dark .border-\[\#3D362E\],
+html.dark .border-\[\#3A3A3D\],
+html.dark .border-\[\#38383B\],
 html.dark .border-slate-200,
 html.dark .border-slate-300,
 html.dark .border-slate-400,
 html.dark .border-gray-200,
-html.dark .border-gray-300,
-html.dark .border-stone-200 {
-  border-color: #424246 !important;
+html.dark .border-gray-300 {
+  border-color: #1e3461 !important;
 }
 
-/* Textos oscuros en HTML.dark pasan a ser claros */
+/* Tipografía de Alto Contraste en Modo Oscuro */
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+  color: #ffffff !important;
+}
+
 html.dark .text-\[\#2D2D30\],
 html.dark .text-\[\#2B2B2E\],
 html.dark .text-\[\#0F1016\],
@@ -354,7 +283,7 @@ html.dark .text-slate-800,
 html.dark .text-gray-900,
 html.dark .text-gray-800,
 html.dark .text-black {
-  color: #FBF8F2 !important;
+  color: #f8fafc !important;
 }
 
 html.dark .text-\[\#6B6256\],
@@ -362,318 +291,615 @@ html.dark .text-\[\#475569\],
 html.dark .text-slate-600,
 html.dark .text-slate-700,
 html.dark .text-gray-600 {
-  color: #AA9E80 !important;
+  color: #94a3b8 !important;
 }
 
-/* Mantener tonos dorados y de éxito claros */
+/* Mapeo del color dorado/moca anterior al nuevo CYAN/AZUL vibrante de STFLAB */
 html.dark .text-\[\#C6A466\],
 html.dark .text-\[\#B59355\],
 html.dark .text-\[\#F0DCA8\],
 html.dark .text-amber-400,
 html.dark .text-amber-500 {
-  color: #C6A466 !important;
+  color: #38bdf8 !important;
+}
+
+html.dark .bg-\[\#C6A466\] {
+  background-color: #00b4d8 !important;
+  color: #ffffff !important;
 }
 
 /* Inputs, Selects y Textareas en Modo Oscuro */
 html.dark input:not([type="checkbox"]):not([type="radio"]),
 html.dark select,
 html.dark textarea {
-  background-color: #2D2D30 !important;
-  color: #FBF8F2 !important;
-  border-color: #424246 !important;
+  background-color: #0b1329 !important;
+  color: #ffffff !important;
+  border-color: #1e3461 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
 }
 
 /* Tablas en Modo Oscuro */
-html.dark table thead {
-  background-color: #252528 !important;
-  color: #AA9E80 !important;
+html.dark table thead,
+html.dark table thead tr,
+html.dark table thead th {
+  background-color: #0b1329 !important;
+  color: #94a3b8 !important;
+  border-color: #1e3461 !important;
 }
 
 html.dark table tbody tr {
-  background-color: #2B2B2E !important;
-  border-color: #3A3A3D !important;
+  background-color: #0f1b35 !important;
+  border-color: #1e3461 !important;
+  color: #f8fafc !important;
 }
 
 html.dark table tbody tr:hover {
-  background-color: #38383B !important;
+  background-color: #132247 !important;
 }
 
-/* Light Mode Overrides (html.light) */
-html.light body {
-  background-color: #F5F4F0 !important;
-  color: #2D2D30 !important;
+/* =========================================================
+   STFLAB THEME ENGINE: MODO CLARO (Blanco / Slate Ultra Limpio)
+   Exactamente como la mitad superior de la imagen de referencia
+   ========================================================= */
+
+html.light body,
+html.light #root,
+html.light main {
+  background-color: #f3f6fb !important;
+  color: #0f172a !important;
 }
 
+/* Encabezado en modo claro */
 html.light header {
-  background-color: #F5F4F0 !important;
-  border-color: #E2E0D8 !important;
+  background-color: #f3f6fb !important;
+  border-color: #e2e8f0 !important;
 }
 
 html.light header h1 {
-  color: #2D2D30 !important;
+  color: #0f172a !important;
 }
 
-html.light header img {
-  filter: none !important;
-}
-
-/* Light Mode Sidebar (html.light aside) - Todo el texto en negro/café oscuro ultra fácil de ver */
+/* Menú lateral (Sidebar) en modo claro */
 html.light aside {
-  background-color: #FFFFFF !important;
-  border-color: #E2E0D8 !important;
-  color: #2D2D30 !important;
-}
-
-html.light aside img {
-  filter: none !important;
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 html.light aside h1,
 html.light aside h2,
 html.light aside h3,
-html.light aside span:not(.bg-\[\#C6A466\]),
 html.light aside p,
-html.light aside a {
-  color: #2D2D30 !important;
-}
-
-html.light aside .text-\[\#C8C2B8\],
-html.light aside .text-slate-400,
-html.light aside .text-slate-300 {
-  color: #2D2D30 !important;
+html.light aside span:not([class*="bg-cyan"]):not([class*="bg-sky"]):not([class*="bg-rose"]):not([class*="bg-emerald"]) {
+  color: #334155 !important;
 }
 
 html.light aside svg {
-  color: #2D2D30 !important;
+  color: #475569 !important;
 }
 
-/* Elemento activo en la barra lateral en Modo Claro */
-html.light aside .bg-\[\#C6A466\] {
-  background-color: #8C6D1F !important;
-  color: #FFFFFF !important;
+/* Elemento activo en el menú lateral modo claro: Azul Turquesa #00b4d8 con texto blanco */
+html.light aside .bg-\[\#C6A466\],
+html.light aside [data-active="true"] {
+  background-color: #00b4d8 !important;
+  color: #ffffff !important;
 }
 
 html.light aside .bg-\[\#C6A466\] span,
-html.light aside .bg-\[\#C6A466\] svg {
-  color: #FFFFFF !important;
+html.light aside .bg-\[\#C6A466\] svg,
+html.light aside [data-active="true"] span,
+html.light aside [data-active="true"] svg {
+  color: #ffffff !important;
 }
 
-/* Hover de botones del menú lateral en Modo Claro */
-html.light aside button:not(.bg-\[\#C6A466\]):hover {
-  background-color: #F0EFEB !important;
-  color: #2D2D30 !important;
+/* =========================================================
+   SISTEMA DE CONTRASTE INTELIGENTE: FONDO OSCURO VS FONDO CLARO
+   Garantiza visibilidad del 100% en cualquier pantalla y modo
+   ========================================================= */
+
+/* 1. REGLA FUNDAMENTAL: Todo lo que esté sobre FONDO OSCURO debe tener LETRAS BLANCAS / CLARAS */
+/* Aplica en cualquier modo y tiene prioridad sobre contenedores padres claros */
+.dark-surface,
+[class*="bg-slate-900"],
+[class*="bg-slate-950"],
+[class*="bg-[#120F0D]"],
+[class*="bg-[#0b1329]"],
+[class*="bg-[#0f1b35]"],
+[class*="bg-[#132247]"],
+[class*="bg-[#1C1A16]"],
+[class*="bg-[#1A1A1C]"],
+[class*="bg-[#080e1e]"],
+[class*="from-slate-900"],
+[class*="from-indigo-950"],
+[class*="via-indigo-950"],
+[class*="from-blue-950"] {
+  color: #f8fafc;
 }
 
-html.light aside button:not(.bg-\[\#C6A466\]):hover svg {
-  color: #2D2D30 !important;
+/* Títulos sobre fondo oscuro SIEMPRE blancos con máxima prioridad */
+[class*="bg-slate-900"] h1, [class*="bg-slate-900"] h2, [class*="bg-slate-900"] h3, [class*="bg-slate-900"] h4, [class*="bg-slate-900"] h5, [class*="bg-slate-900"] h6,
+[class*="bg-slate-950"] h1, [class*="bg-slate-950"] h2, [class*="bg-slate-950"] h3, [class*="bg-slate-950"] h4, [class*="bg-slate-950"] h5, [class*="bg-slate-950"] h6,
+[class*="bg-[#120F0D]"] h1, [class*="bg-[#120F0D]"] h2, [class*="bg-[#120F0D]"] h3, [class*="bg-[#120F0D]"] h4, [class*="bg-[#120F0D]"] h5, [class*="bg-[#120F0D]"] h6,
+[class*="bg-[#0b1329]"] h1, [class*="bg-[#0b1329]"] h2, [class*="bg-[#0b1329]"] h3, [class*="bg-[#0b1329]"] h4, [class*="bg-[#0b1329]"] h5, [class*="bg-[#0b1329]"] h6,
+[class*="bg-[#0f1b35]"] h1, [class*="bg-[#0f1b35]"] h2, [class*="bg-[#0f1b35]"] h3, [class*="bg-[#0f1b35]"] h4, [class*="bg-[#0f1b35]"] h5, [class*="bg-[#0f1b35]"] h6,
+[class*="bg-[#132247]"] h1, [class*="bg-[#132247]"] h2, [class*="bg-[#132247]"] h3, [class*="bg-[#132247]"] h4, [class*="bg-[#132247]"] h5, [class*="bg-[#132247]"] h6,
+[class*="bg-[#1C1A16]"] h1, [class*="bg-[#1C1A16]"] h2, [class*="bg-[#1C1A16]"] h3, [class*="bg-[#1C1A16]"] h4, [class*="bg-[#1C1A16]"] h5, [class*="bg-[#1C1A16]"] h6,
+[class*="bg-[#1A1A1C]"] h1, [class*="bg-[#1A1A1C]"] h2, [class*="bg-[#1A1A1C]"] h3, [class*="bg-[#1A1A1C]"] h4, [class*="bg-[#1A1A1C]"] h5, [class*="bg-[#1A1A1C]"] h6,
+[class*="bg-[#080e1e]"] h1, [class*="bg-[#080e1e]"] h2, [class*="bg-[#080e1e]"] h3, [class*="bg-[#080e1e]"] h4, [class*="bg-[#080e1e]"] h5, [class*="bg-[#080e1e]"] h6,
+[class*="from-slate-900"] h1, [class*="from-slate-900"] h2, [class*="from-slate-900"] h3, [class*="from-slate-900"] h4,
+[class*="from-indigo-950"] h1, [class*="from-indigo-950"] h2, [class*="from-indigo-950"] h3, [class*="from-indigo-950"] h4,
+[class*="via-indigo-950"] h1, [class*="via-indigo-950"] h2, [class*="via-indigo-950"] h3, [class*="via-indigo-950"] h4 {
+  color: #ffffff !important;
 }
 
-/* Footer del menú lateral en Modo Claro */
-html.light aside .bg-\[\#15110E\],
-html.light aside .bg-\[\#171310\] {
-  background-color: #F9F8F5 !important;
-  border-color: #E2E0D8 !important;
+/* Spans dentro de títulos oscuros deben heredar blanco, excepto badges específicos */
+[class*="bg-slate-900"] h1 > span:not([class*="bg-"]), [class*="bg-slate-900"] h2 > span:not([class*="bg-"]), [class*="bg-slate-900"] h3 > span:not([class*="bg-"]),
+[class*="bg-slate-950"] h1 > span:not([class*="bg-"]), [class*="bg-slate-950"] h2 > span:not([class*="bg-"]), [class*="bg-slate-950"] h3 > span:not([class*="bg-"]),
+[class*="bg-[#120F0D]"] h1 > span:not([class*="bg-"]), [class*="bg-[#120F0D]"] h2 > span:not([class*="bg-"]), [class*="bg-[#120F0D]"] h3 > span:not([class*="bg-"]),
+[class*="bg-[#0b1329]"] h1 > span:not([class*="bg-"]), [class*="bg-[#0b1329]"] h2 > span:not([class*="bg-"]), [class*="bg-[#0b1329]"] h3 > span:not([class*="bg-"]),
+[class*="bg-[#0f1b35]"] h1 > span:not([class*="bg-"]), [class*="bg-[#0f1b35]"] h2 > span:not([class*="bg-"]), [class*="bg-[#0f1b35]"] h3 > span:not([class*="bg-"]),
+[class*="from-slate-900"] h1 > span:not([class*="bg-"]), [class*="from-slate-900"] h2 > span:not([class*="bg-"]), [class*="from-slate-900"] h3 > span:not([class*="bg-"]) {
+  color: #ffffff !important;
 }
 
-html.light aside .border-\[\#38383B\] {
-  border-color: #E2E0D8 !important;
+/* Subtítulos y descripciones sobre fondo oscuro SIEMPRE claros */
+[class*="bg-slate-900"] p, [class*="bg-slate-950"] p,
+[class*="bg-[#120F0D]"] p, [class*="bg-[#0b1329]"] p,
+[class*="bg-[#0f1b35]"] p, [class*="bg-[#132247]"] p,
+[class*="bg-[#1C1A16]"] p, [class*="bg-[#1A1A1C]"] p,
+[class*="bg-[#080e1e]"] p,
+[class*="from-slate-900"] p,
+[class*="via-indigo-950"] p {
+  color: #cbd5e1 !important;
 }
 
-/* Botón de cerrar (X) en Modo Claro */
-html.light aside button.absolute {
-  color: #2D2D30 !important;
+/* 2. REGLA FUNDAMENTAL: Todo lo que esté sobre FONDO BLANCO / CLARO debe tener LETRAS OSCURAS */
+html.light .bg-white:not([class*="bg-slate-9"]):not([class*="bg-[#120"]):not([class*="bg-[#0b1"]):not([class*="bg-[#0f1"]):not([class*="from-slate-9"]):not([class*="via-indigo-9"]),
+html.light .bg-slate-50:not([class*="bg-slate-9"]):not([class*="bg-[#120"]):not([class*="bg-[#0b1"]):not([class*="bg-[#0f1"]):not([class*="from-slate-9"]):not([class*="via-indigo-9"]),
+html.light .bg-slate-100:not([class*="bg-slate-9"]):not([class*="bg-[#120"]):not([class*="bg-[#0b1"]):not([class*="bg-[#0f1"]):not([class*="from-slate-9"]):not([class*="via-indigo-9"]) {
+  color: #0f172a;
 }
 
-html.light aside button.absolute:hover {
-  background-color: #F0EFEB !important;
-  color: #2D2D30 !important;
+/* EN MODO CLARO: TODOS los encabezados de áreas (Corte, Patronaje, Compras, Laboratorio, etc.) deben ser NEGROS (#0f172a) */
+html.light h1:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white),
+html.light h2:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white),
+html.light h3:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white),
+html.light h4:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white),
+html.light h5:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white),
+html.light h6:not([class*="bg-slate-9"] *):not([class*="bg-slate-950"] *):not([class*="bg-[#120F0D]"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-950"] *):not(.text-white) {
+  color: #0f172a !important;
 }
 
-html.light .bg-\[\#1E1E21\],
-html.light .bg-\[\#120F0D\],
-html.light .bg-\[\#181410\],
-html.light .bg-\[\#1E1E24\],
-html.light .bg-\[\#141417\],
-html.light .bg-\[\#242428\],
-html.light .bg-\[\#0B132B\],
-html.light .bg-slate-900,
-html.light .bg-slate-950,
-html.light .bg-\[\#252528\] {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
+/* Encabezados sobre tarjetas convertidas a blanco en modo claro */
+html.light .bg-\[\#2B2B2E\] h1, html.light .bg-\[\#2B2B2E\] h2, html.light .bg-\[\#2B2B2E\] h3, html.light .bg-\[\#2B2B2E\] h4,
+html.light .bg-\[\#2D2D30\] h1, html.light .bg-\[\#2D2D30\] h2, html.light .bg-\[\#2D2D30\] h3, html.light .bg-\[\#2D2D30\] h4,
+html.light .bg-\[\#1E1E21\] h1, html.light .bg-\[\#1E1E21\] h2, html.light .bg-\[\#1E1E21\] h3, html.light .bg-\[\#1E1E21\] h4,
+html.light .bg-\[\#252528\] h1, html.light .bg-\[\#252528\] h2, html.light .bg-\[\#252528\] h3, html.light .bg-\[\#252528\] h4,
+html.light .bg-white h1, html.light .bg-white h2, html.light .bg-white h3, html.light .bg-white h4,
+html.light .bg-slate-50 h1, html.light .bg-slate-50 h2, html.light .bg-slate-50 h3, html.light .bg-slate-50 h4 {
+  color: #0f172a !important;
 }
 
+/* Párrafos en tarjetas blancas en modo claro */
+html.light .bg-white > p, html.light .bg-slate-50 > p,
+html.light .bg-\[\#2B2B2E\] p, html.light .bg-\[\#2D2D30\] p, html.light .bg-\[\#1E1E21\] p {
+  color: #334155 !important;
+}
+
+/* Reasignar el blanco del tema oscuro (#FBF8F2) a negro azabache en modo claro */
+html.light .text-\[\#FBF8F2\],
+html.light .text-\[\#F5F5F0\],
+html.light .text-\[\#FBFBFB\],
+html.light .text-\[\#F8F8F8\],
+html.light .text-\[\#EEEEEE\],
+html.light .text-\[\#E6E6E6\] {
+  color: #0f172a !important;
+}
+
+/* =========================================================
+   TEXTOS EN MODO CLARO: VARIANTES OSCURAS, DENSAS Y DE ALTO CONTRASTE
+   Garantiza que ningún texto gris o pastel se vea lavado o descolorido
+   ========================================================= */
+
+/* Textos grises convertidos a variantes oscuras y densas */
+html.light .text-slate-300:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-slate-400:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-gray-300:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-gray-400:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-zinc-300:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-zinc-400:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-stone-300:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-stone-400:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-neutral-300:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-neutral-400:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+html.light .text-slate-500:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-gray-500:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-zinc-500:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-stone-500:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-neutral-500:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+html.light .text-slate-600:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-gray-600:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-zinc-600:not([class*="bg-slate-9"] *):not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+/* Antiguos colores beige/tierra convertidos a slate oscuro */
+html.light .text-\[\#D4C8B0\], html.light .text-\[\#E6DCB8\], html.light .text-\[\#F0DCA8\],
+html.light .text-\[\#AA9E80\], html.light .text-\[\#A8A095\], html.light .text-\[\#C8C2B8\],
+html.light .text-\[\#DEC987\], html.light .text-\[\#6B6256\], html.light .text-\[\#8E857B\] {
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+/* Colores pastel convertidos en variantes oscuras, saturadas y densas */
+html.light .text-indigo-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-indigo-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #312e81 !important;
+  font-weight: 600;
+}
+
+html.light .text-blue-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-blue-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #1e3a8a !important;
+  font-weight: 600;
+}
+
+html.light .text-sky-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-sky-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #075985 !important;
+  font-weight: 600;
+}
+
+html.light .text-cyan-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-cyan-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #155e75 !important;
+  font-weight: 600;
+}
+
+html.light .text-teal-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-teal-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #134e4a !important;
+  font-weight: 600;
+}
+
+html.light .text-emerald-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-emerald-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-green-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-green-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #064e3b !important;
+  font-weight: 600;
+}
+
+html.light .text-amber-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-amber-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-yellow-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-yellow-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #78350f !important;
+  font-weight: 600;
+}
+
+html.light .text-rose-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-rose-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-red-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-red-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #881337 !important;
+  font-weight: 600;
+}
+
+html.light .text-purple-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-purple-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-violet-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-violet-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #581c87 !important;
+  font-weight: 600;
+}
+
+html.light .text-fuchsia-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-fuchsia-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-pink-300:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white),
+html.light .text-pink-400:not([class*="from-slate-9"] *):not([class*="via-indigo-9"] *):not(.text-white) {
+  color: #701a75 !important;
+  font-weight: 600;
+}
+
+/* Badges con texto e indicativo de color en modo claro */
+html.light .bg-amber-400\/20, html.light .bg-amber-500\/20 {
+  color: #78350f !important;
+  border-color: rgba(217, 119, 6, 0.4) !important;
+}
+html.light .bg-emerald-400\/20, html.light .bg-emerald-500\/20 {
+  color: #064e3b !important;
+  border-color: rgba(5, 150, 105, 0.4) !important;
+}
+html.light .bg-blue-400\/20, html.light .bg-blue-500\/20 {
+  color: #1e3a8a !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+}
+html.light .bg-indigo-400\/20, html.light .bg-indigo-500\/20 {
+  color: #312e81 !important;
+  border-color: rgba(79, 70, 229, 0.4) !important;
+}
+
+/* Modos de tarjetas en modo claro */
 html.light .bg-\[\#2B2B2E\],
 html.light .bg-\[\#2D2D30\],
+html.light .bg-\[\#1E1E21\],
+html.light .bg-\[\#252528\],
 html.light .bg-\[\#171310\],
-html.light .bg-\[\#3A3A3D\],
-html.light .bg-slate-900\/90,
-html.light .bg-slate-950\/90 {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
+html.light .bg-\[\#3A3A3D\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
 }
 
 html.light .bg-\[\#38383B\],
-html.light .bg-\[\#424246\],
-html.light .bg-\[\#3D362E\],
-html.light .bg-\[\#2E2822\],
-html.light .bg-\[\#142B1F\] {
-  background-color: #F1F5F9 !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
+html.light .bg-\[\#424246\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* En modo claro NINGUNA letra debe ser blanca o beige. Letras estrictamente en Negro (#0F172A / #2D2D30) o Dorado (#8C6D1F/#C6A466) */
-html.light .text-white,
-html.light .text-\[\#FBF8F2\],
-html.light .text-\[\#FFF8E7\],
-html.light .text-\[\#F0EFEB\],
-html.light .text-\[\#EAE3D2\],
-html.light .text-\[\#F0DCA8\],
-html.light .text-\[\#E6DCB8\],
-html.light .text-slate-100,
-html.light .text-slate-200,
-html.light .text-slate-300,
-html.light .text-slate-400,
-html.light .text-slate-500,
-html.light .text-\[\#A8A095\],
-html.light .text-\[\#AA9E80\] {
-  color: #0F172A !important;
-}
-
-html.light .text-\[\#C6A466\],
-html.light .text-\[\#B59355\],
-html.light .text-amber-300,
-html.light .text-amber-400,
-html.light .text-amber-500,
-html.light .text-amber-600 {
-  color: #8C6D1F !important;
-}
-
+/* Bordes en Modo Claro */
 html.light .border-\[\#424246\],
 html.light .border-\[\#3D362E\],
 html.light .border-\[\#3A3A3D\],
 html.light .border-\[\#38383B\],
-html.light .border-\[\#4A4137\] {
-  border-color: #CBD5E1 !important;
+html.light .border-\[\#4A4137\],
+html.light .border-\[\#EFECE6\],
+html.light .border-\[\#E2E0D8\] {
+  border-color: #e2e8f0 !important;
 }
 
+/* Acentos y enlaces en modo claro */
+html.light .text-\[\#C6A466\],
+html.light .text-\[\#B59355\],
+html.light .text-\[\#F0DCA8\] {
+  color: #0284c7 !important;
+}
+
+html.light .bg-\[\#C6A466\] {
+  background-color: #00b4d8 !important;
+  color: #ffffff !important;
+}
+
+/* Inputs, Selects y Textareas en Modo Claro */
 html.light input:not([type="checkbox"]):not([type="radio"]),
 html.light select,
 html.light textarea {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
-}
-
-html.light table thead {
-  background-color: #F1F5F9 !important;
-  color: #0F172A !important;
-}
-
-html.light table tbody tr {
-  border-color: #CBD5E1 !important;
-}
-
-/* ==========================================
-   ALTA LEGIBILIDAD Y RESALTE TIPOGRÁFICO GLOBAL
-   Facilita la lectura y ubicación de información para los usuarios
-   ========================================== */
-
-body, button, input, select, textarea {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Encabezados y Títulos Destacados */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 800 !important;
-  letter-spacing: -0.015em;
-}
-
-/* Etiquetas e Identificadores */
-label, th {
-  font-weight: 700 !important;
-  letter-spacing: 0.02em;
-}
-
-/* Tablas con texto más definido */
-table thead th {
-  font-weight: 800 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase;
-}
-
-table tbody td {
-  font-weight: 600 !important;
-}
-
-/* Reglas de Resalte en MODO CLARO */
-html.light h1,
-html.light h2,
-html.light h3,
-html.light h4,
-html.light h5,
-html.light h6 {
-  color: #1C1917 !important;
-}
-
-html.light label,
-html.light th {
-  color: #2D2D30 !important;
-}
-
-html.light input:not([type="checkbox"]):not([type="radio"]),
-html.light select,
-html.light textarea {
-  color: #1C1917 !important;
-  font-weight: 700 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
 }
 
 html.light input::placeholder,
 html.light textarea::placeholder {
-  color: #52525B !important;
+  color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
-html.light table thead {
-  background-color: #EBE9E2 !important;
-  color: #1C1917 !important;
+/* Tablas en Modo Claro */
+html.light table thead,
+html.light table thead tr,
+html.light table thead th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Reglas de Resalte en MODO OSCURO */
-html.dark h1,
-html.dark h2,
-html.dark h3,
-html.dark h4,
-html.dark h5,
-html.dark h6 {
-  color: #FFFFFF !important;
+html.light table tbody tr {
+  background-color: #ffffff !important;
+  border-color: #f1f5f9 !important;
+  color: #1e293b !important;
 }
 
-html.dark label,
-html.dark th {
-  color: #FBF8F2 !important;
+html.light table tbody tr:hover {
+  background-color: #f8fafc !important;
 }
 
-html.dark input:not([type="checkbox"]):not([type="radio"]),
-html.dark select,
-html.dark textarea {
-  color: #FFFFFF !important;
-  font-weight: 700 !important;
+/* Excepciones de texto blanco sobre fondos de color */
+.bg-sky-500, .bg-cyan-500, .bg-blue-600, .bg-emerald-500, .bg-rose-500, .bg-purple-600,
+.bg-cyan-600, .bg-emerald-600, .bg-rose-600 {
+  color: #ffffff !important;
 }
 
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: #A1A1AA !important;
-  opacity: 1 !important;
+/* Botones principales con el look Cyan STFLAB */
+.btn-stf-primary {
+  background-color: #00b4d8;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  font-weight: 700;
+  border-radius: 0.75rem;
+}
+.btn-stf-primary:hover {
+  background-color: #0096c7;
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
 }
 
-html.dark table thead {
-  background-color: #252528 !important;
-  color: #FBF8F2 !important;
+/* Modales con desenfoque de fondo */
+.backdrop-blur-modal {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ==========================================================================
+   CALCULADORA DE LABORATORIO TEXTIL (EXCLUSIVO: LETRAS BLANCAS Y MODO OSCURO)
+   Garantiza que incluso en Modo Claro (html.light), este modal tenga textos
+   blancos nítidos, fondos oscuros e inputs perfectamente legibles.
+   ========================================================================== */
+
+/* 1. Fondo base y texto general en blanco */
+html.light .calculadora-laboratorio-modal,
+html.dark .calculadora-laboratorio-modal,
+.calculadora-laboratorio-modal {
+  color: #ffffff !important;
+}
+
+html.light .calculadora-laboratorio-modal *,
+html.dark .calculadora-laboratorio-modal *,
+.calculadora-laboratorio-modal * {
+  color-scheme: dark;
+}
+
+/* 2. Todos los encabezados, párrafos, labels, spans y textos deben ser BLANCOS */
+html.light .calculadora-laboratorio-modal h1,
+html.light .calculadora-laboratorio-modal h2,
+html.light .calculadora-laboratorio-modal h3,
+html.light .calculadora-laboratorio-modal h4,
+html.light .calculadora-laboratorio-modal h5,
+html.light .calculadora-laboratorio-modal h6,
+html.light .calculadora-laboratorio-modal p,
+html.light .calculadora-laboratorio-modal label,
+html.light .calculadora-laboratorio-modal span:not([class*="bg-cyan-500"]):not([class*="bg-amber"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-red"]),
+html.light .calculadora-laboratorio-modal strong,
+html.light .calculadora-laboratorio-modal b,
+html.light .calculadora-laboratorio-modal td,
+html.light .calculadora-laboratorio-modal th,
+html.light .calculadora-laboratorio-modal small,
+.calculadora-laboratorio-modal h1,
+.calculadora-laboratorio-modal h2,
+.calculadora-laboratorio-modal h3,
+.calculadora-laboratorio-modal h4,
+.calculadora-laboratorio-modal h5,
+.calculadora-laboratorio-modal h6,
+.calculadora-laboratorio-modal p,
+.calculadora-laboratorio-modal label,
+.calculadora-laboratorio-modal span:not([class*="bg-cyan-500"]):not([class*="bg-amber"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-red"]),
+.calculadora-laboratorio-modal strong,
+.calculadora-laboratorio-modal b,
+.calculadora-laboratorio-modal td,
+.calculadora-laboratorio-modal th,
+.calculadora-laboratorio-modal small {
+  color: #ffffff !important;
+}
+
+/* 3. Textos con clases de Tailwind text-slate-*, text-gray-*, etc. forzados a blanco */
+html.light .calculadora-laboratorio-modal [class*="text-slate-"],
+html.light .calculadora-laboratorio-modal [class*="text-gray-"],
+html.light .calculadora-laboratorio-modal [class*="text-zinc-"],
+html.light .calculadora-laboratorio-modal [class*="text-stone-"],
+html.light .calculadora-laboratorio-modal [class*="text-neutral-"],
+.calculadora-laboratorio-modal [class*="text-slate-"],
+.calculadora-laboratorio-modal [class*="text-gray-"],
+.calculadora-laboratorio-modal [class*="text-zinc-"],
+.calculadora-laboratorio-modal [class*="text-stone-"],
+.calculadora-laboratorio-modal [class*="text-neutral-"] {
+  color: #ffffff !important;
+}
+
+/* 4. Acentos específicos preservados con alto contraste sobre fondo oscuro */
+.calculadora-laboratorio-modal .text-cyan-400,
+html.light .calculadora-laboratorio-modal .text-cyan-400 {
+  color: #22d3ee !important;
+}
+.calculadora-laboratorio-modal .text-cyan-300,
+html.light .calculadora-laboratorio-modal .text-cyan-300 {
+  color: #67e8f9 !important;
+}
+.calculadora-laboratorio-modal .text-indigo-400,
+.calculadora-laboratorio-modal .text-indigo-300,
+html.light .calculadora-laboratorio-modal .text-indigo-400,
+html.light .calculadora-laboratorio-modal .text-indigo-300 {
+  color: #a5b4fc !important;
+}
+.calculadora-laboratorio-modal .text-emerald-400,
+.calculadora-laboratorio-modal .text-emerald-300,
+html.light .calculadora-laboratorio-modal .text-emerald-400,
+html.light .calculadora-laboratorio-modal .text-emerald-300 {
+  color: #34d399 !important;
+}
+.calculadora-laboratorio-modal .text-amber-400,
+.calculadora-laboratorio-modal .text-amber-300,
+html.light .calculadora-laboratorio-modal .text-amber-400,
+html.light .calculadora-laboratorio-modal .text-amber-300 {
+  color: #fbbf24 !important;
+}
+.calculadora-laboratorio-modal .text-rose-400,
+html.light .calculadora-laboratorio-modal .text-rose-400 {
+  color: #fb7185 !important;
+}
+
+/* 5. Inputs, selects y textareas: Fondo oscuro y LETRAS BLANCAS */
+html.light .calculadora-laboratorio-modal input:not([type="checkbox"]):not([type="radio"]),
+html.light .calculadora-laboratorio-modal select,
+html.light .calculadora-laboratorio-modal textarea,
+.calculadora-laboratorio-modal input:not([type="checkbox"]):not([type="radio"]),
+.calculadora-laboratorio-modal select,
+.calculadora-laboratorio-modal textarea {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #475569 !important;
+  border-radius: 0.75rem !important;
+}
+
+html.light .calculadora-laboratorio-modal input:focus,
+html.light .calculadora-laboratorio-modal select:focus,
+html.light .calculadora-laboratorio-modal textarea:focus,
+.calculadora-laboratorio-modal input:focus,
+.calculadora-laboratorio-modal select:focus,
+.calculadora-laboratorio-modal textarea:focus {
+  border-color: #00b4d8 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.25) !important;
+}
+
+.calculadora-laboratorio-modal input::placeholder,
+.calculadora-laboratorio-modal textarea::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+/* 6. Botones de pestañas y botones secundarios */
+html.light .calculadora-laboratorio-modal button:not([class*="bg-cyan-500"]),
+.calculadora-laboratorio-modal button:not([class*="bg-cyan-500"]) {
+  color: #ffffff !important;
+}
+
+html.light .calculadora-laboratorio-modal button.bg-cyan-500,
+.calculadora-laboratorio-modal button.bg-cyan-500 {
+  color: #090d16 !important;
+}
+
+/* 7. Tablas dentro de la calculadora */
+html.light .calculadora-laboratorio-modal table thead,
+html.light .calculadora-laboratorio-modal table thead tr,
+html.light .calculadora-laboratorio-modal table thead th,
+.calculadora-laboratorio-modal table thead,
+.calculadora-laboratorio-modal table thead tr,
+.calculadora-laboratorio-modal table thead th {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+html.light .calculadora-laboratorio-modal table tbody tr,
+.calculadora-laboratorio-modal table tbody tr {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #1e293b !important;
+}
+
+html.light .calculadora-laboratorio-modal table td,
+.calculadora-laboratorio-modal table td {
+  color: #ffffff !important;
+}
+
+html.light .calculadora-laboratorio-modal table tbody tr:hover,
+.calculadora-laboratorio-modal table tbody tr:hover {
+  background-color: #1e293b !important;
 }
 

@@ -195,12 +195,12 @@ export const CorteView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-[#FBF8F2] tracking-tight font-sans">5. Corte & Tendido</h2>
-              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#C6A466]/15 text-[#C6A466] border border-[#C6A466]/30 font-mono tracking-wider">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-sans">5. Corte & Tendido</h2>
+              <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#00b4d8]/15 text-[#008db0] dark:text-[#38bdf8] border border-[#00b4d8]/30 font-mono tracking-wider">
                 FASE OPERATIVA
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-[#A8A095] mt-1 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium leading-relaxed">
               Control de tiempo de reposo textil (24h - 48h), alineación de orillos y descarte de metros no conformes antes de pasar a confección.
             </p>
           </div>
@@ -219,8 +219,8 @@ export const CorteView: React.FC = () => {
       {showGuia && (
         <div className="bg-[#2D2D30] rounded-3xl p-5 border-2 border-[#C6A466]/40 shadow-sm space-y-4 animate-fade-in text-[#FBF8F2] text-xs">
           <div className="flex items-center justify-between border-b border-[#424246] pb-2">
-            <h4 className="font-serif font-bold text-[#C6A466] uppercase tracking-wider flex items-center gap-1.5">
-              <Info className="h-4 w-4" />
+            <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Info className="h-4 w-4 text-[#00b4d8]" />
               Protocolo de Reposo y Relajación Textil
             </h4>
             <button onClick={() => setShowGuia(false)} className="text-[#AA9E80] hover:text-white font-bold cursor-pointer">✕</button>
@@ -248,7 +248,7 @@ export const CorteView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-rose-400 animate-pulse" />
-              <h3 className="text-sm font-serif font-bold text-[#FBF8F2] uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Alertas Funcionales Recibidas de Compras para Tendido ({telasCompradasConAlerta.length})
               </h3>
             </div>
@@ -282,8 +282,8 @@ export const CorteView: React.FC = () => {
         
         {/* Columna Izquierda: Aprobación de Tendido (5 cols) */}
         <div className="lg:col-span-5 bg-[#2D2D30] border border-[#424246] rounded-3xl p-6 shadow-sm space-y-5 text-[#FBF8F2]">
-          <h3 className="font-serif font-bold text-sm uppercase tracking-wider text-[#FBF8F2] border-b border-[#424246] pb-3 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#C6A466]" />
+          <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#00b4d8]" />
             Dictamen Técnico de Tendido
           </h3>
 
@@ -388,8 +388,8 @@ export const CorteView: React.FC = () => {
           {/* Bloque 1: Control de Matiz (Shade Control) */}
           <div className="bg-[#2D2D30] border border-[#424246] rounded-3xl p-6 shadow-sm space-y-4 text-[#FBF8F2]">
             <div className="flex items-center justify-between border-b border-[#424246] pb-3">
-              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-[#FBF8F2] flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#C6A466]" />
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-[#00b4d8]" />
                 Control de Matiz entre Rollos (Shade Control)
               </h4>
               <span className="text-[10px] bg-[#C6A466]/20 text-[#C6A466] font-bold px-2 py-0.5 rounded-full border border-[#C6A466]/30">
@@ -461,8 +461,8 @@ export const CorteView: React.FC = () => {
           {/* Bloque 2: Defectos Puntuales y Rendimiento */}
           <div className="bg-[#2D2D30] border border-[#424246] rounded-3xl p-6 shadow-sm space-y-4 text-[#FBF8F2]">
             <div className="flex items-center justify-between border-b border-[#424246] pb-3">
-              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-[#FBF8F2] flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-[#C6A466]" />
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                <Scissors className="w-4 h-4 text-[#00b4d8]" />
                 Defectos Puntuales y Rendimiento Real (m/kg)
               </h4>
               <span className="text-[10px] bg-[#C6A466]/20 text-[#C6A466] font-bold px-2 py-0.5 rounded-full border border-[#C6A466]/30">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuality } from '../../context/QualityContext';
-import { FlaskConical, PackageCheck, Layers, CheckCircle2, ShieldCheck, Shirt } from 'lucide-react';
+import { FlaskConical, PackageCheck, Layers, CheckCircle2, ShieldCheck, Shirt, Trash2, Calculator } from 'lucide-react';
 
 interface LaboratorioHeaderProps {
   tabActiva: 'telas' | 'accesorios' | 'forros-costuras' | 'historial';
@@ -14,15 +14,17 @@ interface LaboratorioHeaderProps {
     rechazadas: number;
   };
   dictamenActual?: string;
+  onAbrirCalculadora?: () => void;
 }
 
 export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
   tabActiva,
   onCambiarTab,
   stats,
-  dictamenActual = 'APROBADO'
+  dictamenActual = 'APROBADO',
+  onAbrirCalculadora
 }) => {
-  const { analistaActivo } = useQuality();
+  const { analistaActivo, pendientesLabTelas, pendientesLabInsumos, papelera, setModalPapeleraAbierto } = useQuality();
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3 font-sans">
@@ -37,7 +39,7 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black text-slate-800 tracking-tight font-display">
+              <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight font-display">
                 STFGROUP LAB
               </h1>
               <span className="text-[10px] bg-blue-100 text-blue-800 font-extrabold px-2 py-0.5 rounded-full border border-blue-200 uppercase">
@@ -76,19 +78,25 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
           <button
             type="button"
             onClick={() => onCambiarTab('telas')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tabActiva === 'telas'
                 ? 'bg-blue-600 text-white shadow-sm font-extrabold'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Telas & Ensayos LAB</span>
-            {stats.pendientes > 0 && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                tabActiva === 'telas' ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-700'
-              }`}>
-                {stats.pendientes}
+            <span>Telas</span>
+            {pendientesLabTelas > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                  tabActiva === 'telas' ? 'bg-blue-800 text-white' : 'bg-rose-100 text-rose-700 border border-rose-200'
+                }`}>
+                  {pendientesLabTelas}
+                </span>
               </span>
             )}
           </button>
@@ -96,7 +104,7 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
           <button
             type="button"
             onClick={() => onCambiarTab('accesorios')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tabActiva === 'accesorios'
                 ? 'bg-blue-600 text-white shadow-sm font-extrabold'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'
@@ -104,6 +112,19 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
           >
             <PackageCheck className="w-4 h-4" />
             <span>Insumos</span>
+            {pendientesLabInsumos > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                  tabActiva === 'accesorios' ? 'bg-blue-800 text-white' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
+                  {pendientesLabInsumos}
+                </span>
+              </span>
+            )}
           </button>
 
           <button
@@ -116,7 +137,7 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
             }`}
           >
             <Shirt className="w-4 h-4 text-amber-500" />
-            <span>Forros & Costuras (Pipin / Shipping)</span>
+            <span>Forros & Costura (PNP)</span>
           </button>
 
           <button
@@ -130,6 +151,31 @@ export const LaboratorioHeader: React.FC<LaboratorioHeaderProps> = ({
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Historial</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Botón Calculadora Técnica de Laboratorio */}
+          <button
+            type="button"
+            onClick={onAbrirCalculadora}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10 hover:from-cyan-500/20 hover:to-indigo-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-300/80 dark:border-cyan-700/60 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Abrir Calculadora Técnica de Laboratorio (Gramaje, Rendimiento, Encogimientos, Revirado, Títulos, Densidad, Elongación y CAD)"
+          >
+            <Calculator className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span>Calculadora Lab</span>
+            <span className="text-[9px] bg-cyan-600 text-white font-mono px-1.5 py-0.5 rounded-full uppercase">PRO</span>
+          </button>
+
+          {/* Botón Papelera de Reciclaje */}
+          <button
+            type="button"
+            onClick={() => setModalPapeleraAbierto(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+            title="Ver solicitudes eliminadas"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            <span>Papelera ({papelera.length})</span>
           </button>
         </div>
       </div>

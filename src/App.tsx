@@ -18,6 +18,7 @@ import { TechnicalSheetModal } from './components/technical-sheet/TechnicalSheet
 import { NewSampleModal } from './components/common/NewSampleModal';
 import { BulkImportModal } from './components/common/BulkImportModal';
 import { NotificationToastContainer } from './components/common/NotificationToastContainer';
+import { PapeleraReciclajeModal } from './components/common/PapeleraReciclajeModal';
 import { ExploradorFichasModal } from './components/fichas-tecnicas/ExploradorFichasModal';
 import { PortalProveedorModal } from './components/portal-proveedor/PortalProveedorModal';
 import { AsistenteIAModal } from './components/ai-assistant/AsistenteIAModal';
@@ -33,7 +34,9 @@ import { BibliotecaView } from './components/areas/BibliotecaView';
 import { ChatView } from './components/areas/ChatView';
 import { ConfiguracionView } from './components/areas/ConfiguracionView';
 import { DocumentosView } from './components/areas/DocumentosView';
+import { CentroMonitoreoView } from './components/areas/CentroMonitoreoView';
 import { UserRole, AreaType } from './types';
+import { sincronizarSesionUsuarioActual, mapearAreaAModulo } from './services/monitoringService';
 
 const MainContent: React.FC = () => {
   const { areaActual } = useQuality();
@@ -54,6 +57,7 @@ const MainContent: React.FC = () => {
       {areaActual === 'chat' && <ChatView />}
       {areaActual === 'configuracion' && <ConfiguracionView />}
       {areaActual === 'documentos' && <DocumentosView />}
+      {areaActual === 'soporte-tecnico' && <CentroMonitoreoView />}
 
       {/* Modales Globales */}
       <AreaSelectorModal />
@@ -62,14 +66,15 @@ const MainContent: React.FC = () => {
       <NewSampleModal />
       <BulkImportModal />
       <NotificationToastContainer />
+      <PapeleraReciclajeModal />
 
     </main>
   );
 };
 
 const MainAppShell: React.FC = () => {
-  const { usuario, iniciarSesion } = useAuth();
-  const { setAreaActual } = useQuality();
+  const { usuario } = useAuth();
+  const { areaActual, setAreaActual } = useQuality();
   const [modalBaseFTAbierto, setModalBaseFTAbierto] = useState(false);
   const [modalPortalTokenAbierto, setModalPortalTokenAbierto] = useState(false);
 
@@ -85,7 +90,10 @@ const MainAppShell: React.FC = () => {
         calidad: 'dashboard',
         dashboard: 'dashboard',
         admin: 'dashboard',
-        proveedor: 'portal-proveedor'
+        proveedor: 'portal-proveedor',
+        'soporte-tecnico': 'soporte-tecnico',
+        'soporte_tecnico': 'soporte-tecnico',
+        soporte: 'soporte-tecnico'
       };
 
       const keyArea = (usuario.areaAsignada || (usuario.role ? usuario.role.toLowerCase() : 'dashboard')).toLowerCase();
@@ -94,13 +102,26 @@ const MainAppShell: React.FC = () => {
     }
   }, [usuario?.uid]);
 
+  // Sincronizar en tiempo real la sesión del usuario conectado real en el Centro de Monitoreo
+  React.useEffect(() => {
+    if (usuario && areaActual) {
+      sincronizarSesionUsuarioActual(
+        usuario,
+        areaActual,
+        areaActual === 'soporte-tecnico'
+          ? 'Supervisión en Centro de Monitoreo'
+          : `Consultó módulo ${mapearAreaAModulo(areaActual)}`
+      );
+    }
+  }, [usuario, areaActual]);
+
   // Si no hay usuario autenticado, muestra el Panel de Acceso Obligatorio con Usuario y Contraseña
   if (!usuario) {
     return <LoginView />;
   }
 
   return (
-    <div className="min-h-screen bg-crema text-negro flex flex-col justify-between transition-colors duration-250 font-sans">
+    <div className="min-h-screen bg-[#f3f6fb] dark:bg-[#080e1e] text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200 font-sans">
       <div>
         <Navbar 
           onAbrirBaseFT={() => setModalBaseFTAbierto(true)}
@@ -114,13 +135,15 @@ const MainAppShell: React.FC = () => {
       </div>
 
       {/* Footer Institucional */}
-      <footer className="bg-[#2B2B2E] border-t border-[#3A3A3D] py-6 mt-12 text-xs text-[#F0DCA8]/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="bg-white dark:bg-[#0b1329] border-t border-slate-200 dark:border-[#17254e] py-6 mt-12 text-xs text-slate-500 dark:text-slate-400">
+        <div className="max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#C6A466] animate-pulse"></span>
-            <span className="font-bold text-[#FBF8F2] font-display">STFLab 2.0 • Ecosistema de Calidad Textil & Confección (8 Fases)</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00b4d8] animate-pulse"></span>
+            <span className="font-bold text-slate-900 dark:text-slate-100 font-display">
+              STFLab 2.0 • Ecosistema de Calidad Textil & Confección (8 Fases)
+            </span>
           </div>
-          <div className="flex items-center gap-4 text-[#F0DCA8]/60 font-mono">
+          <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
             <span>Normas: AATCC 135 • AATCC 179 • ASTM D3776 • ASTM D2061 • ISO 105 • NTC 228</span>
             <span>•</span>
             <span>STF Group S.A.</span>
