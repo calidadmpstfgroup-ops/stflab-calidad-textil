@@ -1158,8 +1158,51 @@ export const ConfiguracionView: React.FC = () => {
                   Plataforma web de <strong>Studio F Group</strong> optimizada como <strong>PWA (Progressive Web App)</strong> para funcionar a pantalla completa con persistencia sin conexión.
                 </p>
 
+                {/* Visual Card del Icono Oficial PWA STFLAB */}
+                <div className="bg-[#2B2B2E] border border-[#424246] rounded-2xl p-5 mt-4 flex flex-col sm:flex-row items-center gap-5">
+                  <div className="relative group shrink-0">
+                    <img 
+                      src="/pwa-icon-512.png" 
+                      alt="Icono Oficial PWA STFLAB" 
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-xl border border-cyan-500/30 object-contain bg-[#060c18] transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-cyan-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm whitespace-nowrap">
+                      STFLAB PWA
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-center sm:text-left flex-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <span className="font-sans font-black text-base text-white tracking-wide">STFLAB</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase">
+                        Icono Oficial Configurado
+                      </span>
+                    </div>
+                    <p className="text-[#AA9E80] text-xs">
+                      Este es el icono oficial con las letras <strong>STFLAB</strong> que verás al descargar e instalar la app en tu escritorio de Windows o pantalla de inicio de Android / iOS.
+                    </p>
+                    <div className="pt-1 flex flex-wrap gap-2 justify-center sm:justify-start">
+                      <a 
+                        href="/pwa-icon-512.png" 
+                        download="STFLAB-Icono-512.png"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00b4d8] hover:bg-[#0096c7] text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Descargar Icono PNG</span>
+                      </a>
+                      <a 
+                        href="/pwa-icon.svg" 
+                        download="STFLAB-Icono.svg"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-all border border-slate-700"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Descargar Vector SVG</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-[#2B2B2E] border border-[#424246] rounded-2xl p-4 mt-4 space-y-3">
-                  <span className="font-bold text-[10px] uppercase tracking-wider text-[#C6A466] block">📱 Cómo instalar en Dispositivo Móvil</span>
+                  <span className="font-bold text-[10px] uppercase tracking-wider text-[#C6A466] block">📱 Cómo instalar en Dispositivo Móvil y Computador</span>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-3 bg-[#2D2D30] border border-[#424246] rounded-xl space-y-1">

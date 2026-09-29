@@ -1,21 +1,36 @@
 {
-  "name": "TexLab Connect Stf",
-  "short_name": "Studio F Lab",
-  "description": "Sistema integrado de control de calidad textil y trazabilidad bidimensional para Laboratorio, Compras, Patronaje y Corte.",
+  "name": "STFLAB - Control de Calidad Textil",
+  "short_name": "STFLAB",
+  "description": "Sistema integrado de control de calidad textil y trazabilidad bidimensional para Laboratorio, Compras, Patronaje y Corte - STF GROUP S.A.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1A1612",
-  "theme_color": "#1A1612",
+  "background_color": "#060c18",
+  "theme_color": "#060c18",
+  "orientation": "any",
   "icons": [
     {
-      "src": "/pwa_icon_v2.jpg",
+      "src": "/pwa-icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "/pwa_icon_v2.jpg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }

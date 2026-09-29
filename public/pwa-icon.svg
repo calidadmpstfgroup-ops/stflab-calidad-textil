@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060c18"/>
+      <stop offset="50%" stop-color="#0b172e"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+
+    <!-- Glow Gradient -->
+    <radialGradient id="centerGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#00b4d8" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#0077b6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Gold Accent Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+
+    <!-- Cyan Accent Gradient -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <!-- Border Ring Gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="35%" stop-color="#00b4d8" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#eab308" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ca8a04" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- App Squircle Background -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)"/>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#centerGlow)"/>
+
+  <!-- High-end Border Stroke -->
+  <rect x="18" y="18" width="476" height="476" rx="106" fill="none" stroke="url(#ringGrad)" stroke-width="5"/>
+
+  <!-- Inner Soft Inset Border -->
+  <rect x="28" y="28" width="456" height="456" rx="96" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <!-- STF Crown / Textile Diamond Emblem at Top -->
+  <g transform="translate(256, 125)" filter="url(#shadow)">
+    <!-- Decorative Wings / Facets -->
+    <path d="M-80 -15 L-35 -40 L0 -52 L35 -40 L80 -15 L45 0 L0 10 L-45 0 Z" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linejoin="round" opacity="0.4"/>
+    
+    <!-- Central Hexagonal Tech Flask & Textile Weave -->
+    <path d="M0 -42 L32 -22 L32 18 L0 38 L-32 18 L-32 -22 Z" fill="#0c1a38" stroke="url(#cyanGrad)" stroke-width="3.5"/>
+    
+    <!-- STF Monogram Shape inside Crest -->
+    <path d="M-14 -16 L14 -16 M0 -16 L0 18 M-8 6 L8 6" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Sparkle Dots -->
+    <circle cx="-48" cy="-2" r="3.5" fill="#38bdf8"/>
+    <circle cx="48" cy="-2" r="3.5" fill="#eab308"/>
+  </g>
+
+  <!-- Main Letters: STFLAB -->
+  <g filter="url(#shadow)">
+    <text x="256" y="295" text-anchor="middle" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', Inter, Roboto, sans-serif" font-weight="900" font-size="82" letter-spacing="3">
+      <tspan fill="#ffffff">STF</tspan><tspan fill="url(#cyanGrad)">LAB</tspan>
+    </text>
+  </g>
+
+  <!-- Subtle Accent Underline / Neon Wave -->
+  <g filter="url(#glow)">
+    <path d="M120 324 L220 324 L256 332 L292 324 L392 324" fill="none" stroke="url(#cyanGrad)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="256" cy="332" r="4.5" fill="#fef08a"/>
+  </g>
+
+  <!-- Badge Subtitle: CONTROL DE CALIDAD -->
+  <g transform="translate(256, 385)">
+    <!-- Pill Box -->
+    <rect x="-140" y="-19" width="280" height="38" rx="19" fill="#0f1d3a" stroke="url(#goldGrad)" stroke-width="1.8" opacity="0.95"/>
+    <text x="0" y="5.5" text-anchor="middle" font-family="system-ui, -apple-system, Inter, sans-serif" font-weight="800" font-size="14.5" fill="#e2e8f0" letter-spacing="3.2">
+      CONTROL CALIDAD
+    </text>
+  </g>
+
+  <!-- Mini STF GROUP corporate footer -->
+  <text x="256" y="445" text-anchor="middle" font-family="system-ui, -apple-system, Inter, sans-serif" font-weight="700" font-size="11" fill="#94a3b8" letter-spacing="4" opacity="0.8">
+    STF GROUP S.A.
+  </text>
+</svg>
