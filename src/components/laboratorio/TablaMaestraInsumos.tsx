@@ -1,5 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { GUIA_MAESTRA_INSUMOS, GuiaMaestraInsumoItem } from '../../data/guiaMaestraInsumos';
+import { 
+  GUIA_MAESTRA_INSUMOS, 
+  GuiaMaestraInsumoItem,
+  generarDiagnosticoInsumoAutomatico 
+} from '../../data/guiaMaestraInsumos';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Search, 
@@ -15,7 +19,11 @@ import {
   ShieldCheck,
   Zap,
   Info,
-  Tag
+  Tag,
+  FlaskConical,
+  AlertTriangle,
+  XCircle,
+  Wand2
 } from 'lucide-react';
 
 interface TablaMaestraInsumosProps {
@@ -36,6 +44,13 @@ export const TablaMaestraInsumos: React.FC<TablaMaestraInsumosProps> = ({
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('TODAS');
   const [copiadoId, setCopiadoId] = useState<string | null>(null);
 
+  // Estados del Simulador / Evaluador Rápido
+  const [mostrarSimulador, setMostrarSimulador] = useState(false);
+  const [insumoSimuladorId, setInsumoSimuladorId] = useState<string>(GUIA_MAESTRA_INSUMOS[0].id);
+  const [simuladorDictamen, setSimuladorDictamen] = useState<'APROBADO' | 'HALLAZGO' | 'RECHAZADO'>('APROBADO');
+  const [simuladorMedicion, setSimuladorMedicion] = useState<string>('');
+  const [resultadoGenerado, setResultadoGenerado] = useState<string | null>(null);
+
   const categorias = useMemo(() => {
     const set = new Set<string>();
     GUIA_MAESTRA_INSUMOS.forEach(item => {
@@ -43,6 +58,7 @@ export const TablaMaestraInsumos: React.FC<TablaMaestraInsumosProps> = ({
     });
     return ['TODAS', ...Array.from(set)];
   }, []);
+
 
   const itemsFiltrados = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
@@ -103,7 +119,21 @@ export const TablaMaestraInsumos: React.FC<TablaMaestraInsumosProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end md:self-center">
+          <div className="flex items-center gap-2 self-end md:self-center flex-wrap">
+            <button
+              type="button"
+              onClick={() => setMostrarSimulador(!mostrarSimulador)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md border ${
+                mostrarSimulador
+                  ? 'bg-amber-500 text-slate-950 border-amber-400'
+                  : 'bg-indigo-600/40 hover:bg-indigo-600/60 text-indigo-200 border-indigo-500/40'
+              }`}
+              title="Abrir Simulador y Evaluador Rápido de Calidad de Insumos"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+              <span>{mostrarSimulador ? 'Ocultar Simulador' : '⚡ Simulador de Ensayo'}</span>
+            </button>
+
             <button
               type="button"
               onClick={handleImprimir}
@@ -126,6 +156,238 @@ export const TablaMaestraInsumos: React.FC<TablaMaestraInsumosProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Simulador y Evaluador Rápido Interactivo */}
+      {mostrarSimulador && (() => {
+        const itemActual = GUIA_MAESTRA_INSUMOS.find(i => i.id === insumoSimuladorId) || GUIA_MAESTRA_INSUMOS[0];
+
+        const handleEjecutarSimulacion = () => {
+          const diag = generarDiagnosticoInsumoAutomatico(itemActual, simuladorDictamen);
+          const textoCompleto = simuladorMedicion.trim()
+            ? `${diag.observacion} • Medición Lab: ${simuladorMedicion.trim()}`
+            : diag.observacion;
+          setResultadoGenerado(textoCompleto);
+        };
+
+        const handleCopiarResultado = () => {
+          if (resultadoGenerado) {
+            navigator.clipboard.writeText(resultadoGenerado);
+            alert('✓ Dictamen técnico copiado al portapapeles');
+          }
+        };
+
+        return (
+          <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl transition-all animate-in fade-in-50 duration-200 ${
+            esModoClaro
+              ? 'bg-amber-50/70 border-amber-200/80 text-slate-900'
+              : 'bg-gradient-to-br from-slate-900 via-indigo-950/60 to-slate-900 border-indigo-500/40 text-slate-100'
+          }`}>
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-indigo-500/20">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                  <FlaskConical className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black tracking-tight flex items-center gap-2">
+                    <span>Simulador y Evaluador Rápido de Calidad de Insumos</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      Automatización Oficial
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Evalúa parámetros técnicos en tiempo real según la norma oficial de STF Group.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarSimulador(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              {/* Selector de Insumo */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-indigo-400" />
+                  <span>Seleccionar Insumo Estándar (19)</span>
+                </label>
+                <select
+                  value={insumoSimuladorId}
+                  onChange={(e) => {
+                    setInsumoSimuladorId(e.target.value);
+                    setResultadoGenerado(null);
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none ${
+                    esModoClaro
+                      ? 'bg-white border-slate-300 text-slate-950 focus:border-indigo-600'
+                      : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-indigo-400'
+                  }`}
+                >
+                  {GUIA_MAESTRA_INSUMOS.map(item => (
+                    <option key={item.id} value={item.id}>
+                      {item.id}. {item.insumo} ({item.normaReferencia || 'STF-STD'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dictamen Deseado */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>Resultado del Ensayo</span>
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimuladorDictamen('APROBADO');
+                      setResultadoGenerado(null);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center gap-1 ${
+                      simuladorDictamen === 'APROBADO'
+                        ? 'bg-emerald-600 text-white border-emerald-400 shadow-md'
+                        : 'bg-slate-950/80 text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/40'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Aprobado</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimuladorDictamen('HALLAZGO');
+                      setResultadoGenerado(null);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center gap-1 ${
+                      simuladorDictamen === 'HALLAZGO'
+                        ? 'bg-yellow-600 text-white border-yellow-400 shadow-md'
+                        : 'bg-slate-950/80 text-yellow-400 border-yellow-500/30 hover:bg-yellow-950/40'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>Novedad</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimuladorDictamen('RECHAZADO');
+                      setResultadoGenerado(null);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center gap-1 ${
+                      simuladorDictamen === 'RECHAZADO'
+                        ? 'bg-rose-600 text-white border-rose-400 shadow-md'
+                        : 'bg-slate-950/80 text-rose-400 border-rose-500/30 hover:bg-rose-950/40'
+                    }`}
+                  >
+                    <XCircle className="w-3 h-3" />
+                    <span>Rechazado</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Medición o Valor Obtenido */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  <span>Dato Medido / Nota Opcional</span>
+                </label>
+                <input
+                  type="text"
+                  value={simuladorMedicion}
+                  onChange={(e) => setSimuladorMedicion(e.target.value)}
+                  placeholder="Ej: Resistencia 18.5 kgf, 50 ciclos OK..."
+                  className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                    esModoClaro
+                      ? 'bg-white border-slate-300 text-slate-950 focus:border-indigo-600'
+                      : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-indigo-400'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Ficha Técnica Rápida del Insumo Seleccionado */}
+            <div className={`mt-3 p-3 rounded-xl border text-xs grid grid-cols-1 sm:grid-cols-3 gap-3 ${
+              esModoClaro
+                ? 'bg-white/80 border-slate-200 text-slate-800'
+                : 'bg-slate-950/60 border-slate-800 text-slate-300'
+            }`}>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block mb-0.5">
+                  Parámetro Crítico:
+                </span>
+                <span className="font-semibold text-xs">{itemActual.parametroCritico}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-400 block mb-0.5">
+                  Método de Verificación:
+                </span>
+                <span className="font-semibold text-xs">{itemActual.metodoVerificacion}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block mb-0.5">
+                  Criterio / Tolerancia Oficial:
+                </span>
+                <span className="font-semibold text-xs">{itemActual.criterioAceptacion}</span>
+              </div>
+            </div>
+
+            {/* Botón de Ejecución */}
+            <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleEjecutarSimulacion}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95"
+              >
+                <Wand2 className="w-3.5 h-3.5 text-slate-950" />
+                <span>Generar Diagnóstico Técnico Oficial</span>
+              </button>
+
+              {resultadoGenerado && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopiarResultado}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar Diagnóstico</span>
+                  </button>
+
+                  {onSeleccionarCriterio && (
+                    <button
+                      type="button"
+                      onClick={() => onSeleccionarCriterio(itemActual)}
+                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Aplicar a la Muestra</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Resultado Generado */}
+            {resultadoGenerado && (
+              <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-amber-500/40 text-amber-200 font-mono text-xs leading-relaxed">
+                <span className="text-[10px] uppercase font-bold text-amber-400 block mb-1">
+                  Texto Generado para Respuesta Técnica Oficial:
+                </span>
+                <p className="whitespace-pre-wrap">{resultadoGenerado}</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
 
       {/* Controles de Búsqueda y Filtros */}
       <div className={`rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border transition-colors ${
@@ -321,6 +583,23 @@ export const TablaMaestraInsumos: React.FC<TablaMaestraInsumosProps> = ({
                       {/* Acciones */}
                       <td className="py-3 px-3 align-top text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInsumoSimuladorId(item.id);
+                              setMostrarSimulador(true);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                              esModoClaro
+                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
+                                : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            }`}
+                            title="Probar en el Simulador y Evaluador Rápido"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleCopiar(item)}

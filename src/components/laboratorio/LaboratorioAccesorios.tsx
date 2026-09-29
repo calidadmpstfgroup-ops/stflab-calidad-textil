@@ -10,7 +10,12 @@ import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../common/Badge';
 import { TablaMaestraInsumos } from './TablaMaestraInsumos';
 import { ReporteEvaluacionInsumoModal } from './ReporteEvaluacionInsumoModal';
-import { GuiaMaestraInsumoItem } from '../../data/guiaMaestraInsumos';
+import { 
+  GuiaMaestraInsumoItem,
+  identificarInsumoGuiaMaestra,
+  generarDiagnosticoInsumoAutomatico,
+  autoEvaluarListaInsumos 
+} from '../../data/guiaMaestraInsumos';
 import { 
   PackageCheck, 
   Search, 
@@ -37,7 +42,9 @@ import {
   BookOpen,
   CheckSquare,
   Square,
-  Trash2
+  Trash2,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
 interface LaboratorioAccesoriosProps {
@@ -357,14 +364,45 @@ export const LaboratorioAccesorios: React.FC<LaboratorioAccesoriosProps> = ({
   // Aplicar Criterio desde la Guía Maestra a la muestra seleccionada
   const handleAplicarCriterioGuia = (criterio: GuiaMaestraInsumoItem) => {
     if (idxMuestraParaGuia !== null && muestrasBorrador[idxMuestraParaGuia]) {
-      const textoDetallado = `[${criterio.insumo}] Verif: ${criterio.metodoVerificacion} • Criterio: ${criterio.criterioAceptacion}`;
-      handleCambioMuestra(idxMuestraParaGuia, 'observacion', textoDetallado);
-      handleCambioMuestra(idxMuestraParaGuia, 'resultado', 'OK');
-      handleCambioMuestra(idxMuestraParaGuia, 'dictamen', 'APROBADO');
+      const diag = generarDiagnosticoInsumoAutomatico(criterio, 'APROBADO');
+      handleCambioMuestra(idxMuestraParaGuia, 'observacion', diag.observacion);
+      handleCambioMuestra(idxMuestraParaGuia, 'resultado', diag.resultado);
+      handleCambioMuestra(idxMuestraParaGuia, 'dictamen', diag.dictamen);
+      handleCambioMuestra(idxMuestraParaGuia, 'responsableLab', muestrasBorrador[idxMuestraParaGuia].responsableLab || responsableLabInput || usuarioLogueadoNombre);
     }
     setModalGuiaMaestra(false);
     setIdxMuestraParaGuia(null);
   };
+
+  // Auto-evaluar todo el lote actual con la Guía Maestra Oficial (19 insumos estándar)
+  const handleAutoEvaluarConGuiaMaestra = () => {
+    if (!muestrasBorrador.length) {
+      alert('No hay insumos en este lote para auto-evaluar.');
+      return;
+    }
+
+    const { itemsEvaluados, resumen } = autoEvaluarListaInsumos(
+      muestrasBorrador, 
+      responsableLabInput || usuarioLogueadoNombre
+    );
+
+    setMuestrasBorrador(itemsEvaluados);
+
+    if (solicitudSeleccionada) {
+      itemsEvaluados.forEach(item => {
+        onActualizarItem(solicitudSeleccionada.id, item.id, item);
+      });
+    }
+
+    alert(
+      `⚡ ¡Automatización Ejecutada con Éxito!\n\n` +
+      `• Total de líneas evaluadas: ${resumen.total}\n` +
+      `• Insumos identificados con Guía Maestra: ${resumen.identificadosConGuia}\n` +
+      `• Dictámenes asignados: ${resumen.aprobados} Aprobados, ${resumen.rechazados} Rechazados, ${resumen.observados} Novedades\n\n` +
+      `Se aplicaron parámetros críticos, tolerancias y normas técnicas oficiales a cada insumo.`
+    );
+  };
+
 
   return (
     <div className="space-y-5">
@@ -659,18 +697,30 @@ export const LaboratorioAccesorios: React.FC<LaboratorioAccesoriosProps> = ({
                 </span>
               </div>
 
-              {/* Botón rápido para consultar la guía maestra */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIdxMuestraParaGuia(null);
-                  setModalGuiaMaestra(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                <span>📘 Guía Maestra (18 Insumos)</span>
-              </button>
+              {/* Botones rápidos: Guía Maestra y Automatización Lote */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleAutoEvaluarConGuiaMaestra}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs transition-all cursor-pointer shadow-md shadow-amber-500/20 active:scale-95 border border-amber-300/60"
+                  title="Identificar automáticamente cada insumo según la Guía Maestra Oficial (19 Estándares) y asignar parámetros técnicos, métodos y tolerancias"
+                >
+                  <Zap className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
+                  <span>⚡ Auto-Evaluar Lote</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIdxMuestraParaGuia(null);
+                    setModalGuiaMaestra(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                  <span>📘 Guía Maestra (19 Insumos)</span>
+                </button>
+              </div>
             </div>
 
             {/* Barra de Respuestas en Grupo / Selección Múltiple */}
@@ -842,6 +892,36 @@ export const LaboratorioAccesorios: React.FC<LaboratorioAccesoriosProps> = ({
                               <BookOpen className="w-3.5 h-3.5 text-amber-400" />
                             </button>
                           </div>
+
+                          {/* Sugerencia inteligente de Guía Maestra con 1 clic */}
+                          {(() => {
+                            const insumoSugerido = identificarInsumoGuiaMaestra(`${m.descripcionInsumo || ''} ${m.referencia || ''}`);
+                            if (!insumoSugerido) return null;
+                            const yaAplicado = m.observacion && m.observacion.includes(insumoSugerido.insumo);
+                            return (
+                              <div className="mt-1 flex items-center justify-between gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const diag = generarDiagnosticoInsumoAutomatico(insumoSugerido, 'APROBADO');
+                                    handleCambioMuestra(idx, 'observacion', diag.observacion);
+                                    handleCambioMuestra(idx, 'resultado', diag.resultado);
+                                    handleCambioMuestra(idx, 'dictamen', diag.dictamen);
+                                    handleCambioMuestra(idx, 'responsableLab', m.responsableLab || responsableLabInput || usuarioLogueadoNombre);
+                                  }}
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                                    yaAplicado
+                                      ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40'
+                                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border-amber-500/30'
+                                  }`}
+                                  title="Detectado por Guía Maestra: Haz clic para auto-aplicar criterio, método y norma técnica oficial"
+                                >
+                                  <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                                  <span>{yaAplicado ? '✓ Aplicado:' : '⚡ Auto-aplicar:'} <b>{insumoSugerido.insumo}</b> ({insumoSugerido.normaReferencia || 'STF'})</span>
+                                </button>
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         {/* Persona Responsable por Item */}
