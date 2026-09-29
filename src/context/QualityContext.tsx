@@ -52,6 +52,12 @@ import {
   CORREOS_CORPORATIVOS_STF,
   RegistroHistorialCorreo 
 } from '../services/emailNotificationService';
+import {
+  inicializarBaseDatosFichas,
+  guardarFichaEnBaseDatos,
+  guardarLoteFichasEnBaseDatos,
+  obtenerFichasDeLocalStorage
+} from '../services/fichasDatabaseService';
 
 interface QualityContextType {
   muestras: MuestraTextil[];
@@ -367,16 +373,21 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     return [];
   });
 
-  // Repositorio Histórico de Fichas Técnicas del Fabricante (con Versionamiento)
+  // Repositorio Histórico de Fichas Técnicas del Fabricante (con Versionamiento y Base de Datos)
   const [fichasTecnicasHistorial, setFichasTecnicasHistorial] = useState<FichaTecnicaHistoricaVersionada[]>(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_FICHAS_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn('Error leyendo localStorage de fichas:', e);
-    }
-    return [];
+    const guardadas = obtenerFichasDeLocalStorage();
+    if (guardadas && guardadas.length > 0) return guardadas;
+    return MOCK_FICHAS_TECNICAS_HISTORICAS;
   });
+
+  // Hidratación e inicialización de la Base de Datos de Fichas Técnicas (IndexedDB + Cloud)
+  useEffect(() => {
+    inicializarBaseDatosFichas().then((fichasBD) => {
+      if (fichasBD && fichasBD.length > 0) {
+        setFichasTecnicasHistorial(fichasBD);
+      }
+    }).catch((err) => console.warn('Error inicializando Base de Datos de Fichas:', err));
+  }, []);
 
   const [areaActual, setAreaActual] = useState<AreaType>('dashboard');
   const [subseccionLaboratorio, setSubseccionLaboratorio] = useState<'telas' | 'accesorios' | 'forros-costuras' | 'historial'>('telas');
@@ -492,6 +503,16 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, [solicitudesAccesorios]);
 
+  // Persistencia de la Base de Datos de Fichas Técnicas en LocalStorage e IndexedDB
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_FICHAS_KEY, JSON.stringify(fichasTecnicasHistorial));
+      guardarLoteFichasEnBaseDatos(fichasTecnicasHistorial);
+    } catch (e) {
+      console.error('Error sincronizando base de datos de fichas técnicas:', e);
+    }
+  }, [fichasTecnicasHistorial]);
+
   // Consultar Ficha Técnica Histórica (Prioridad: Proveedor + Referencia Proveedor / Nombre Comercial)
   const consultarFichaTecnicaHistorica = (
     referencia?: string,
@@ -539,6 +560,7 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const guardarFichaTecnica = (fichaActualizada: FichaTecnicaHistoricaVersionada) => {
+    guardarFichaEnBaseDatos(fichaActualizada).catch(err => console.warn('Aviso guardando ficha en BD:', err));
     setFichasTecnicasHistorial((prev) => {
       const existe = prev.some(f => f.id === fichaActualizada.id || (f.proveedor.toLowerCase() === fichaActualizada.proveedor.toLowerCase() && f.referenciaProveedor.toLowerCase() === fichaActualizada.referenciaProveedor.toLowerCase()));
       if (existe) {
@@ -552,6 +574,8 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
     ficha: FichaTecnicaHistoricaVersionada, 
     nuevaVersion?: VersionFichaTecnica
   ) => {
+    let fichaAGuardar: FichaTecnicaHistoricaVersionada;
+
     setFichasTecnicasHistorial((prev) => {
       const idx = prev.findIndex(f => 
         f.id === ficha.id || 
@@ -580,25 +604,31 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
           historialVersiones: [...fichaExistente.historialVersiones, versionObj]
         };
 
+        fichaAGuardar = fichaActualizada;
+        guardarFichaEnBaseDatos(fichaActualizada).catch(err => console.warn('Aviso guardando ficha en BD:', err));
+
         const nuevoHistorial = [...prev];
         nuevoHistorial[idx] = fichaActualizada;
         return nuevoHistorial;
       }
 
-      return [{ ...ficha, estadoRevision: 'PENDIENTE_REVISION' }, ...prev];
+      fichaAGuardar = { ...ficha, estadoRevision: 'PENDIENTE_REVISION' };
+      guardarFichaEnBaseDatos(fichaAGuardar).catch(err => console.warn('Aviso guardando ficha en BD:', err));
+      return [fichaAGuardar, ...prev];
     });
 
     // 🔔 Disparar notificación interna a Laboratorio
     dispararNotificacion({
       tipo: 'solicitud',
       titulo: '📄 Nueva Ficha Técnica del Fabricante',
-      mensaje: `El proveedor ${ficha.proveedor} ha enviado la Ficha Técnica para ${ficha.referenciaProveedor} (${ficha.referencia}). Registrada en el Repositorio Histórico [PENDIENTE DE REVISIÓN].`,
+      mensaje: `El proveedor ${ficha.proveedor} ha enviado la Ficha Técnica para ${ficha.referenciaProveedor} (${ficha.referencia}). Registrada en la Base de Datos Histórica [PENDIENTE DE REVISIÓN].`,
       areaDestino: 'laboratorio',
       accionLabel: 'Ver Ficha en Historial'
     });
   };
 
   const importarFichasTecnicasExcel = (fichasNuevas: FichaTecnicaHistoricaVersionada[]) => {
+    guardarLoteFichasEnBaseDatos(fichasNuevas).catch(err => console.warn('Aviso guardando lote en BD:', err));
     setFichasTecnicasHistorial((prev) => [...fichasNuevas, ...prev]);
   };
 
