@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FichaTecnicaHistoricaVersionada, VersionFichaTecnica } from '../../types';
 import { 
   exportarFichaAWord, 
@@ -8,28 +8,44 @@ import {
   X, 
   Download, 
   Printer, 
-  FileText
+  FileText,
+  Save,
+  Check
 } from 'lucide-react';
 import { 
   STFGroupDocumentSheet, 
+  STFGroupDocumentData,
   mapVersionToSTFGroupDocumentData 
 } from './STFGroupDocumentSheet';
 
 interface FichaTecnicaFormatoCompletoModalProps {
   ficha: FichaTecnicaHistoricaVersionada | null;
   version?: VersionFichaTecnica;
+  editable?: boolean;
+  onGuardar?: (data: STFGroupDocumentData) => void;
   onCerrar: () => void;
 }
 
 export const FichaTecnicaFormatoCompletoModal: React.FC<FichaTecnicaFormatoCompletoModalProps> = ({
   ficha,
   version,
+  editable = false,
+  onGuardar,
   onCerrar
 }) => {
   if (!ficha) return null;
 
   const v = version || ficha.historialVersiones?.[ficha.historialVersiones.length - 1];
-  const docData = mapVersionToSTFGroupDocumentData(ficha, v);
+  const [docData, setDocData] = useState<STFGroupDocumentData>(() => mapVersionToSTFGroupDocumentData(ficha, v));
+  const [guardadoExitoso, setGuardadoExitoso] = useState(false);
+
+  const handleGuardarInterno = () => {
+    if (onGuardar) {
+      onGuardar(docData);
+      setGuardadoExitoso(true);
+      setTimeout(() => setGuardadoExitoso(false), 2500);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
@@ -54,8 +70,20 @@ export const FichaTecnicaFormatoCompletoModal: React.FC<FichaTecnicaFormatoCompl
             </div>
           </div>
 
-          {/* Botones de Exportación Word / PDF */}
+          {/* Botones de Exportación Word / PDF y Guardado */}
           <div className="flex items-center gap-2 flex-wrap">
+            {editable && onGuardar && (
+              <button
+                type="button"
+                onClick={handleGuardarInterno}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black shadow transition-all cursor-pointer active:scale-95"
+                title="Guardar cambios realizados en este formato"
+              >
+                {guardadoExitoso ? <Check className="w-3.5 h-3.5 text-emerald-950" /> : <Save className="w-3.5 h-3.5" />}
+                <span>{guardadoExitoso ? '¡Cambios Guardados!' : 'Guardar Cambios'}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => exportarFichaAWord(ficha, v)}
@@ -80,6 +108,7 @@ export const FichaTecnicaFormatoCompletoModal: React.FC<FichaTecnicaFormatoCompl
               type="button"
               onClick={onCerrar}
               className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Cerrar formato"
             >
               <X className="w-5 h-5" />
             </button>
@@ -89,7 +118,11 @@ export const FichaTecnicaFormatoCompletoModal: React.FC<FichaTecnicaFormatoCompl
         {/* Visor de Hoja Técnica STF GROUP Oficial */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100 dark:bg-slate-900/50">
           <div className="max-w-4xl mx-auto">
-            <STFGroupDocumentSheet data={docData} editable={false} />
+            <STFGroupDocumentSheet
+              data={docData}
+              editable={editable}
+              onChange={(updated) => setDocData((prev) => ({ ...prev, ...updated }))}
+            />
           </div>
         </div>
 

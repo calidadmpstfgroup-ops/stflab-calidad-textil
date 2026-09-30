@@ -341,24 +341,77 @@ export const BibliotecaView: React.FC = () => {
             </div>
           </div>
 
-          {/* DOCUMENTO OFICIAL STF GROUP RENDERIZADO EN PANTALLA */}
-          <div className="overflow-x-auto">
-            <STFGroupDocumentSheet
-              data={docData}
-              editable={true}
-              onChange={handleDocumentChange}
-            />
+          {/* Tarjetas de Resumen y Acceso al Formato Completo */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">Composición</span>
+              <span className="text-xs font-black text-white block truncate" title={`${docData.comp1Pct}% ${docData.comp1Nombre}`}>
+                {docData.comp1Nombre ? `${docData.comp1Pct}% ${docData.comp1Nombre}` : '100% POLIESTER'}
+              </span>
+            </div>
+
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">Gramaje</span>
+              <span className="text-xs font-black text-amber-300 font-mono block">
+                {docData.pesoGsm || '0'} g/m²
+              </span>
+            </div>
+
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">Ancho Cortable</span>
+              <span className="text-xs font-black text-emerald-300 font-mono block">
+                {docData.anchoCortableCms || docData.anchoCms || '0'} cm
+              </span>
+            </div>
+
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">Color / Tono</span>
+              <span className="text-xs font-black text-white block truncate">
+                {docData.color || '000 ESTÁNDAR'}
+              </span>
+            </div>
+
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">Lotes Declarados</span>
+              <span className="text-xs font-black text-white block truncate">
+                {docData.lotes || 'N/A'}
+              </span>
+            </div>
+
+            <div className="bg-[#2D2D30] border border-[#424246] rounded-2xl p-3.5 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#AA9E80] block">P.O. Number</span>
+              <span className="text-xs font-black text-[#C6A466] font-mono block">
+                {docData.stfPo || 'N/A'}
+              </span>
+            </div>
           </div>
 
-          {/* Botón flotante inferior de Guardado */}
-          <div className="flex justify-end pt-2">
+          {/* Banner de acceso al formato normativo oficial */}
+          <div className="bg-gradient-to-r from-[#242A38] to-[#1E232F] border border-cyan-500/30 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 text-left">
+                <h4 className="text-sm font-black text-white uppercase tracking-wide flex items-center gap-2">
+                  <span>Documento Normativo Completo (12 Secciones STF GROUP S.A.)</span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40 font-mono">
+                    Oficial
+                  </span>
+                </h4>
+                <p className="text-xs text-[#AA9E80]">
+                  Haz clic en el botón para desplegar la ficha técnica completa con las especificaciones físicas, rapideces, estabilidad dimensional y requisitos de calidad.
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
-              onClick={handleSaveAll}
-              className="bg-[#C6A466] hover:bg-[#D6CDB8] text-[#2B2B2E] font-black text-xs uppercase tracking-wider py-3 px-6 rounded-xl flex items-center space-x-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+              onClick={() => setIsModalFormatoCompletoOpen(true)}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs px-6 py-3 rounded-2xl flex items-center space-x-2 shadow-xl shadow-amber-500/20 active:scale-95 transition-all cursor-pointer shrink-0 uppercase tracking-wider"
             >
-              <Save className="h-4 w-4" />
-              <span>Guardar Cambios en Base de Datos de Fichas Técnicas</span>
+              <Eye className="w-4 h-4 text-zinc-950" />
+              <span>Ver Formato Completo</span>
             </button>
           </div>
         </>
@@ -383,6 +436,13 @@ export const BibliotecaView: React.FC = () => {
         <FichaTecnicaFormatoCompletoModal
           ficha={currentFicha}
           version={currentVersion}
+          editable={true}
+          onGuardar={(updatedDocData) => {
+            setDocData(updatedDocData);
+            const versionActualizada = mapSTFGroupDocumentDataToVersion(currentVersion, updatedDocData);
+            guardarFichaTecnicaProveedor(currentFicha, versionActualizada);
+            alert(`✅ Formato oficial de ${currentFicha.referencia} actualizado exitosamente.`);
+          }}
           onCerrar={() => setIsModalFormatoCompletoOpen(false)}
         />
       )}
