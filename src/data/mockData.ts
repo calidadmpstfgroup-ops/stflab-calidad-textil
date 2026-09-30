@@ -9,175 +9,84 @@ export const MOCK_SOLICITUDES_ACCESORIOS: SolicitudAccesoriosCompleta[] = [];
 export const MOCK_FICHAS_TECNICAS_HISTORICAS: FichaTecnicaHistoricaVersionada[] = [
   {
     id: 'ft-hist-001',
-    codigoFT: 'FT-000125',
+    codigoFT: 'FT-MEX-38770',
     referencia: 'CREPE VICTORIA',
-    referenciaProveedor: 'CV-001',
-    proveedor: 'XYZ TEXTILES',
-    contactoProveedor: 'calidad@xyztextiles.com',
-    paisOrigen: 'Colombia',
-    versionActual: 2,
-    createdAt: '2026-01-15',
-    createdBy: 'Importación Base Histórica',
-    updatedAt: '2026-05-15',
-    updatedBy: 'Ing. Calidad Textil',
+    referenciaProveedor: 'CREPE VICTORIA',
+    proveedor: 'TEXTIVISION, S.DE R.L. DE C.V.',
+    contactoProveedor: 'ventas@textivision.com.mx',
+    paisOrigen: 'MEXICO',
+    versionActual: 1,
+    createdAt: '2022-06-15',
+    createdBy: 'Importación Oficial Fabricante',
+    updatedAt: '2022-06-15',
+    updatedBy: 'Laboratorio Calidad Textil',
     documentoOriginal: {
-      nombreArchivo: 'FT_CrepeVictoria_XYZ_Oficial_v2.pdf',
+      nombreArchivo: 'ESPECIFICACIONES_TECNICAS_CREPE_VICTORIA_TEXTIVISION.pdf',
       tipo: 'PDF',
-      fechaCarga: '2026-05-15'
+      fechaCarga: '2022-06-15'
     },
     historialVersiones: [
       {
         version: 1,
-        fechaVersion: '2026-01-15',
-        creadoPor: 'Importación Base Inicial',
-        activo: false,
-        cambiosRespectoAnterior: 'Versión base de lanzamiento.',
-        nombreArchivoFT: 'FT_CrepeVictoria_XYZ_v1.pdf',
-        especificaciones: {
-          // A. Información del Proveedor
-          nombreEmpresa: 'XYZ TEXTILES S.A.S.',
-          contactoTecnico: 'Ing. Carlos Mendoza',
-          emailContacto: 'calidad@xyztextiles.com',
-          telefonoWhatsapp: '+57 310 445 8899',
-          paisEmpresa: 'Colombia',
-
-          // B. Trazabilidad y Comercial
-          stfPoNumber: 'OAC 1107',
-          fechaProduccion: '2026-01-10',
-          codigoMT: 'MT-90412',
-          referenciaSTF: 'CREPE VICTORIA',
-          referenciaProveedor: 'CV-001',
-          codigoFabrica: 'XYZ-FAB-882',
-          nombreComercialTela: 'Crepe Victoria Premium',
-          molinoFabricante: 'XYZ Textiles Planta Medellín',
-          paisOrigen: 'Colombia',
-          numeroLoteProduccion: 'LOT-8841-A',
-          colorShade: '000 NEGRO',
-          subpartidaArancelaria: '5407.52.00.00',
-          certificadoOrigen: 'CO-2026-9041',
-
-          // C. Composición
-          composicion: '100% Poliéster Crepe Twist',
-          composicionPorcentual: '100% Poliéster',
-          tipoFibraFilamento: 'Filamento Continuo Texturizado',
-          tipoFibraTexturizado: 'High Twist (Alta Torsión Crepe)',
-          tituloHiloUrdimbre: '75D/72F Poliéster',
-          tituloHiloTrama: '150D/144F Poliéster 350 TPM',
-          sentidoTorsion: 'S+Z',
-          mezclaIntima: '100% PES',
-
-          // D. Dimensiones y Peso
-          anchoTotalM: 1.48,
-          anchoUtilM: 1.45,
-          gramajeDeclaradoGsm: 175,
-          pesoLinealGsm: 254,
-          rendimientoMkg: 3.93,
-          espesorMm: 0.38,
-
-          // E. Construcción y Acabados
-          tipoTejido: 'Plano',
-          tipoLigamento: 'Tafetán Crepe Granitado',
-          densidadUrdimbreHilosCm: 42,
-          densidadTramaPasadasCm: 36,
-          acabadosTextiles: 'Fijado térmico + Suavizado siliconado',
-          acabadoColorTintoreria: 'Teñido en pieza alta dispersión',
-
-          // Ensayos y Tolerancias
-          encogimientoLargoMax: -2.5,
-          encogimientoAnchoMax: -3.0,
-          elongacionAnchoMin: 8.0,
-          elongacionLargoMin: 2.0,
-          recuperacionElasticidadMin: 95.0,
-          desviacionTramaMax: 1.5,
-          viroMax: 2.0,
-          resistenciaTensionMin: 28.0,
-          resistenciaDesgarreMin: 1400,
-          deslizamientoCosturaMax: 3.5,
-          resistenciaPillingMin: 4.0,
-          solidezLavadoMin: 4.0,
-          solidezFroteSecoMin: 4.5,
-          solidezFroteHumedoMin: 3.5,
-          cambioColorMin: 4.0,
-          aptitudFrote: 'APTO PARA COMBINAR',
-          pruebaFusionadoTemp: 140,
-          observacionesFabricante: 'Tejido fluido con torsión crepe. Temperatura de planchado máx 110°C.'
-        }
-      },
-      {
-        version: 2,
-        fechaVersion: '2026-05-15',
-        creadoPor: 'Ing. Calidad Textil',
+        fechaVersion: '2022-06-15',
+        creadoPor: 'TEXTIVISION, S.DE R.L. DE C.V.',
         activo: true,
-        cambiosRespectoAnterior: 'Ajuste de gramaje (+5 g/m²) y mejora en solidez al frote húmedo.',
-        nombreArchivoFT: 'FT_CrepeVictoria_XYZ_Oficial_v2.pdf',
+        nombreArchivoFT: 'ESPECIFICACIONES_TECNICAS_CREPE_VICTORIA_TEXTIVISION.pdf',
         especificaciones: {
-          // A. Información del Proveedor
-          nombreEmpresa: 'XYZ TEXTILES S.A.S.',
-          contactoTecnico: 'Ing. Carlos Mendoza',
-          emailContacto: 'calidad@xyztextiles.com',
-          telefonoWhatsapp: '+57 310 445 8899',
-          paisEmpresa: 'Colombia',
+          // 1. Encabezado y Trazabilidad (Datos Exactos del Documento)
+          fechaProduccion: '01-15/JUN/22',
+          stfPoNumber: 'MEX38770',
+          numeroOrdenCompraSTF: 'MEX38770',
+          nombreEmpresa: 'TEXTIVISION, S.DE R.L. DE C.V.',
+          referenciaSTF: 'DESIGN 6341 A',
+          nombreComercialTela: 'DESIGN 6341 A',
+          colorShade: 'AZUL KLEIN 16936',
+          referenciaProveedor: 'CREPE VICTORIA',
+          paisOrigen: 'MEXICO',
+          numeroLoteProduccion: '43254-1, 43313-1, 43367-1, 43463-1',
+          subpartidaArancelaria: '',
 
-          // B. Trazabilidad y Comercial
-          stfPoNumber: 'OAC 1107',
-          fechaProduccion: '2026-05-10',
-          codigoMT: 'MT-90412',
-          referenciaSTF: 'CREPE VICTORIA',
-          referenciaProveedor: 'CV-001',
-          codigoFabrica: 'XYZ-FAB-882',
-          nombreComercialTela: 'Crepe Victoria Premium v2',
-          molinoFabricante: 'XYZ Textiles Planta Medellín',
-          paisOrigen: 'Colombia',
-          numeroLoteProduccion: 'LOT-9102-B',
-          colorShade: '000 NEGRO',
-          subpartidaArancelaria: '5407.52.00.00',
-          certificadoOrigen: 'CO-2026-9041',
+          // 2. Información sobre Certificado de Origen
+          aplicaCertificadoOrigen: false,
 
-          // C. Composición
-          composicion: '100% Poliéster Crepe Twist',
-          composicionPorcentual: '100% Poliéster',
-          tipoFibraFilamento: 'Filamento Continuo Texturizado',
-          tipoFibraTexturizado: 'High Twist (Alta Torsión Crepe)',
-          tituloHiloUrdimbre: '75D/72F Poliéster',
-          tituloHiloTrama: '150D/144F Poliéster 380 TPM',
-          sentidoTorsion: 'S+Z',
-          mezclaIntima: '100% PES',
+          // 3. Descripciones Básicas (Composición y Dimensiones)
+          composicion: 'ACETATO 90%, ELASTANE 10%',
+          composicionPorcentual: '90% ACETATO / 10% ELASTANE',
+          tipoFibraFilamento: 'Continuo',
+          tipoFibraTexturizado: 'Texturizado (Textured)',
+          anchoTotalM: 1.40,
+          anchoUtilM: 1.35,
+          gramajeDeclaradoGsm: 286,
+          pesoDenimOz: undefined,
 
-          // D. Dimensiones y Peso
-          anchoTotalM: 1.50,
-          anchoUtilM: 1.46,
-          gramajeDeclaradoGsm: 180,
-          pesoLinealGsm: 263,
-          rendimientoMkg: 3.80,
-          espesorMm: 0.40,
+          // 4. Acabados en el Textil
+          acabadosTextiles: '100% Impregnado - 100% SOFTENER',
 
-          // E. Construcción y Acabados
-          tipoTejido: 'Plano',
-          tipoLigamento: 'Tafetán Crepe Granitado',
-          densidadUrdimbreHilosCm: 44,
-          densidadTramaPasadasCm: 38,
-          acabadosTextiles: 'Fijado térmico + Suavizado siliconado + Antiestático',
-          acabadoColorTintoreria: 'Teñido en pieza alta dispersión',
-
-          // Ensayos y Tolerancias
-          encogimientoLargoMax: -2.0,
-          encogimientoAnchoMax: -2.5,
-          elongacionAnchoMin: 9.0,
-          elongacionLargoMin: 2.0,
-          recuperacionElasticidadMin: 95.0,
-          desviacionTramaMax: 1.2,
-          viroMax: 1.5,
-          resistenciaTensionMin: 30.0,
-          resistenciaDesgarreMin: 1550,
-          deslizamientoCosturaMax: 3.0,
-          resistenciaPillingMin: 4.5,
+          // 5. Ensayos Técnicos del Textil
+          tituloHiloUrdimbre: 'N/A',
+          tituloHiloTrama: 'ACETATO=150/38 ELASTANO 40/1',
+          resistenciaDesgarreMin: 0,
+          encogimientoLargoMax: -1.8,
+          encogimientoAnchoMax: -6.0,
+          viroMax: 1.7,
           solidezLavadoMin: 4.5,
           solidezFroteSecoMin: 4.5,
-          solidezFroteHumedoMin: 4.0,
-          cambioColorMin: 4.5,
-          aptitudFrote: 'APTO PARA COMBINAR',
-          pruebaFusionadoTemp: 145,
-          observacionesFabricante: 'Acabado antiestático mejorado. Se autoriza para combinaciones con claros.'
+          solidezFroteHumedoMin: 4.5,
+          rendimientoMkg: 2.86,
+          elongacionLargoMin: 150,
+          elongacionAnchoMin: 127,
+          recuperacionElasticidadMin: 0,
+          desviacionTramaMax: 0,
+
+          // 6. Clasificación de Tejido, Ligamento y Color
+          tipoTejido: 'Punto',
+          tipoLigamento: 'Tejido de punto por trama (Weft Knitted)',
+          acabadoColorTintoreria: 'Teñido (Dyed)',
+
+          // 7. Instrucciones de Cuidado
+          lavadoSugerido: 'Machine Wash Cold, Normal Cycle, Separately, Do Not bleach, tumble dry low.',
+          recomendacionesPlanchado: 'Do not Iron',
+          observacionesFabricante: ''
         }
       }
     ]

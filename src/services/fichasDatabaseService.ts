@@ -20,8 +20,8 @@ import { COLECCIONES } from './firestoreService';
 const DB_NAME = 'STFLAB_FICHAS_DATABASE';
 const DB_VERSION = 1;
 const STORE_NAME = 'fichas_tecnicas';
-const LOCAL_STORAGE_KEY = 'stflab_fichas_clean_v5';
-const LOCAL_BACKUP_KEY = 'stflab_fichas_backup_v1';
+const LOCAL_STORAGE_KEY = 'stflab_fichas_clean_v6';
+const LOCAL_BACKUP_KEY = 'stflab_fichas_backup_v2';
 
 // =========================================================================
 // --- 1. GESTOR DE INDEXEDDB                                            ---
@@ -229,7 +229,14 @@ export const inicializarBaseDatosFichas = async (): Promise<FichaTecnicaHistoric
   try {
     const desdeIDB = await cargarFichasDesdeIndexedDB();
     desdeIDB.forEach(f => {
-      if (f && f.id) mapa.set(f.id, f);
+      if (f && f.id) {
+        // Si es la ficha histórica de CREPE VICTORIA pero contenía datos obsoletos o inventados, mantener la oficial
+        if (f.referencia === 'CREPE VICTORIA' && f.proveedor?.includes('XYZ')) {
+          mapa.set(f.id, MOCK_FICHAS_TECNICAS_HISTORICAS[0]);
+        } else {
+          mapa.set(f.id, f);
+        }
+      }
     });
   } catch (err) {
     console.info('[FichasDB] Continuar con LocalStorage:', err);

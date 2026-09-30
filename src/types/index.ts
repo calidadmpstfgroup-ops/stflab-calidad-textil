@@ -999,6 +999,7 @@ export interface VersionFichaTecnica {
     observacionesAdvertencias?: string;
     observacionesFabricante?: string;
     documentosAdjuntos?: DocumentosAdjuntosFichaProveedor;
+    [key: string]: any;
   };
   nombreArchivoFT?: string;
   urlArchivoFT?: string;
