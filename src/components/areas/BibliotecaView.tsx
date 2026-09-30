@@ -16,6 +16,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { ExploradorFichasModal } from '../fichas-tecnicas/ExploradorFichasModal';
+import { FichaTecnicaFormatoCompletoModal } from '../fichas-tecnicas/FichaTecnicaFormatoCompletoModal';
 import { exportarFichaAWord, exportarFichaAPDF } from '../../utils/fichaTecnicaFormatters';
 import { 
   STFGroupDocumentSheet, 
@@ -32,6 +33,7 @@ export const BibliotecaView: React.FC = () => {
   const [showToast, setShowToast] = useState<string | null>(null);
 
   const [isModalExploradorOpen, setIsModalExploradorOpen] = useState<boolean>(false);
+  const [isModalFormatoCompletoOpen, setIsModalFormatoCompletoOpen] = useState<boolean>(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -233,9 +235,20 @@ export const BibliotecaView: React.FC = () => {
                 </span>
               </div>
 
-              <h3 className="text-lg font-serif font-bold text-[#FBF8F2] mt-1.5 uppercase tracking-wide">
-                {docData.refProv || currentFicha.referencia} • {docData.stfRef}
-              </h3>
+              <div className="flex flex-wrap items-center gap-2.5 mt-1.5">
+                <h3 className="text-lg font-serif font-black text-[#FBF8F2] uppercase tracking-wide">
+                  {docData.refProv || currentFicha.referencia} • {docData.stfRef}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsModalFormatoCompletoOpen(true)}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                  title="Ver formato oficial completo de STF GROUP"
+                >
+                  <Eye className="h-3.5 w-3.5 text-zinc-950" />
+                  <span>Ver Formato Completo</span>
+                </button>
+              </div>
               <p className="text-xs text-[#AA9E80] mt-0.5">
                 Proveedor: <strong className="text-[#C6A466]">{docData.proveedorNombre}</strong> • Origen: <strong className="text-[#FBF8F2]">{docData.paisOrigen}</strong>
               </p>
@@ -364,6 +377,15 @@ export const BibliotecaView: React.FC = () => {
           setIsModalExploradorOpen(false);
         }}
       />
+
+      {/* Modal de Formato Completo STF GROUP */}
+      {isModalFormatoCompletoOpen && currentFicha && (
+        <FichaTecnicaFormatoCompletoModal
+          ficha={currentFicha}
+          version={currentVersion}
+          onCerrar={() => setIsModalFormatoCompletoOpen(false)}
+        />
+      )}
 
     </div>
   );

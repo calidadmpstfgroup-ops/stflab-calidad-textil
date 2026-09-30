@@ -584,7 +584,24 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                     </span>
                   </div>
 
-                  <h4 className="text-sm sm:text-base font-black text-white tracking-wide">{ficha.referencia}</h4>
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm sm:text-base font-black text-white tracking-wide truncate">{ficha.referencia}</h4>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFichaSeleccionada(ficha);
+                        setVersionSeleccionadaIndex(ficha.historialVersiones.length - 1);
+                        setFichaParaFormatoCompleto(ficha);
+                        setModalFormatoCompletoAbierto(true);
+                      }}
+                      className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 cursor-pointer shadow-sm transition-all"
+                      title="Ver formato oficial completo de STF GROUP"
+                    >
+                      <Eye className="w-3 h-3 text-amber-400" />
+                      <span>Ver Formato</span>
+                    </button>
+                  </div>
                   
                   <div className="flex items-center justify-between text-xs mt-1 flex-wrap gap-1">
                     <span className="text-[#F0DCA8] font-extrabold">{ficha.proveedor}</span>
@@ -641,7 +658,21 @@ export const ExploradorFichasModal: React.FC<ExploradorFichasModalProps> = ({
                         Versión {versionActiva.version} de {fichaActiva.versionActual}
                       </span>
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-white mt-1 tracking-wide">{fichaActiva.referencia}</h3>
+                    <div className="flex flex-wrap items-center gap-2.5 mt-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-wide">{fichaActiva.referencia}</h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFichaParaFormatoCompleto(fichaActiva);
+                          setModalFormatoCompletoAbierto(true);
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                        title="Ver formato oficial completo de STF GROUP"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Ver Formato Completo</span>
+                      </button>
+                    </div>
                     <p className="text-xs font-bold text-[#E6DCB8] mt-0.5">
                       Fabricante: <strong className="text-[#F0DCA8] font-black text-sm">{fichaActiva.proveedor}</strong> • Ref. Fabricante: <strong className="text-amber-300 font-mono font-black text-sm">{fichaActiva.referenciaProveedor}</strong>
                     </p>

@@ -15,10 +15,12 @@ import {
   PlusCircle,
   Search,
   Layers,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Eye
 } from 'lucide-react';
 import { FormularioFichaProveedor } from './FormularioFichaProveedor';
 import { FichaTecnicaHistoricaVersionada, VersionFichaTecnica } from '../../types';
+import { FichaTecnicaFormatoCompletoModal } from '../fichas-tecnicas/FichaTecnicaFormatoCompletoModal';
 
 interface PortalProveedorModalProps {
   abierto: boolean;
@@ -30,6 +32,7 @@ export const PortalProveedorModal: React.FC<PortalProveedorModalProps> = ({ abie
 
   const [modoVista, setModoVista] = useState<'menu' | 'formulario_nuevo' | 'versionar_existente'>('menu');
   const [fichaSeleccionadaParaVersionar, setFichaSeleccionadaParaVersionar] = useState<FichaTecnicaHistoricaVersionada | null>(null);
+  const [fichaParaFormato, setFichaParaFormato] = useState<FichaTecnicaHistoricaVersionada | null>(null);
   const [filtroBusquedaFT, setFiltroBusquedaFT] = useState('');
   const [enlaceCopiado, setEnlaceCopiado] = useState(false);
 
@@ -271,7 +274,18 @@ export const PortalProveedorModal: React.FC<PortalProveedorModalProps> = ({ abie
                       </span>
                     </div>
                     <div>
-                      <div className="font-semibold text-[#FBF8F2] text-xs">{f.referencia}</div>
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className="font-bold text-[#FBF8F2] text-xs truncate">{f.referencia}</span>
+                        <button
+                          type="button"
+                          onClick={() => setFichaParaFormato(f)}
+                          className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer shrink-0"
+                          title="Ver Formato Completo"
+                        >
+                          <Eye className="w-3 h-3 text-amber-400" />
+                          <span>Ver Formato</span>
+                        </button>
+                      </div>
                       <div className="text-[11px] text-[#AA9E80]">Ref Prov: <strong className="text-[#FBF8F2]">{f.referenciaProveedor}</strong></div>
                       <div className="text-[11px] text-[#C6A466] font-semibold">{f.proveedor}</div>
                     </div>
@@ -294,6 +308,13 @@ export const PortalProveedorModal: React.FC<PortalProveedorModalProps> = ({ abie
         </div>
 
       </div>
+
+      {fichaParaFormato && (
+        <FichaTecnicaFormatoCompletoModal
+          ficha={fichaParaFormato}
+          onCerrar={() => setFichaParaFormato(null)}
+        />
+      )}
     </div>
   );
 };

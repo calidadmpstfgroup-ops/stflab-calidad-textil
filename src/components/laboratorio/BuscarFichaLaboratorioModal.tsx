@@ -21,6 +21,7 @@ import {
   FileText,
   Layers
 } from 'lucide-react';
+import { FichaTecnicaFormatoCompletoModal } from '../fichas-tecnicas/FichaTecnicaFormatoCompletoModal';
 
 interface BuscarFichaLaboratorioModalProps {
   abierto: boolean;
@@ -48,6 +49,7 @@ export const BuscarFichaLaboratorioModal: React.FC<BuscarFichaLaboratorioModalPr
   const [fichaSeleccionada, setFichaSeleccionada] = useState<FichaTecnicaHistoricaVersionada | null>(null);
   const [versionSeleccionada, setVersionSeleccionada] = useState<VersionFichaTecnica | null>(null);
   const [vistaDetalleCompleto, setVistaDetalleCompleto] = useState(false);
+  const [modalFormatoCompletoAbierto, setModalFormatoCompletoAbierto] = useState(false);
 
   useEffect(() => {
     if (abierto) {
@@ -208,7 +210,18 @@ export const BuscarFichaLaboratorioModal: React.FC<BuscarFichaLaboratorioModalPr
                   <div className="flex items-center justify-between border-b border-[#424246] pb-3">
                     <div>
                       <span className="font-mono text-xs font-black text-emerald-300">{fichaSeleccionada.codigoFT}</span>
-                      <h4 className="text-base font-black text-white uppercase tracking-wide mt-0.5">{fichaSeleccionada.referencia}</h4>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <h4 className="text-base font-black text-white uppercase tracking-wide">{fichaSeleccionada.referencia}</h4>
+                        <button
+                          type="button"
+                          onClick={() => setModalFormatoCompletoAbierto(true)}
+                          className="px-2.5 py-1 bg-[#141417] hover:bg-[#2B2B2E] text-amber-300 hover:text-white border border-amber-500/40 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                          title="Ver Formato Oficial Completo de la Ficha Técnica"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Ver Formato Completo</span>
+                        </button>
+                      </div>
                       <p className="text-xs text-[#F0DCA8] font-bold">
                         Fabricante: <strong className="text-white">{fichaSeleccionada.proveedor}</strong> • Ref. Fabricante: <strong className="text-amber-300 font-mono font-black">{fichaSeleccionada.referenciaProveedor || 'N/A'}</strong>
                       </p>
@@ -264,6 +277,14 @@ export const BuscarFichaLaboratorioModal: React.FC<BuscarFichaLaboratorioModalPr
         </div>
 
       </div>
+
+      {modalFormatoCompletoAbierto && fichaSeleccionada && (
+        <FichaTecnicaFormatoCompletoModal
+          ficha={fichaSeleccionada}
+          version={versionSeleccionada || undefined}
+          onCerrar={() => setModalFormatoCompletoAbierto(false)}
+        />
+      )}
     </div>
   );
 };
