@@ -177,115 +177,120 @@ export const STFGroupDocumentSheet: React.FC<STFGroupDocumentSheetProps> = ({
     <div className="w-full bg-white text-black p-4 sm:p-7 rounded-2xl shadow-xl border border-slate-300 font-sans text-[11px] leading-snug">
       
       {/* HEADER: STF GROUP S.A. | ESPECIFICACIONES TECNICAS */}
-      <div className="border-2 border-black flex flex-col md:flex-row items-stretch justify-between mb-2">
-        <div className="p-3 sm:p-4 flex items-center justify-center md:justify-start min-w-[220px]">
+      {/* HEADER: STF GROUP S.A. | ESPECIFICACIONES TECNICAS */}
+      <div className="border-2 border-black flex flex-col md:flex-row items-stretch justify-between mb-0">
+        <div className="p-2 sm:p-3 flex items-center justify-center md:justify-start min-w-[220px] bg-white">
           <span className="text-2xl sm:text-3xl font-black tracking-tight font-sans text-black">
             STF<span className="font-normal text-xl sm:text-2xl">GROUP</span><sub className="text-[10px] font-bold ml-0.5">S.A.</sub>
           </span>
         </div>
-        <div className="bg-black text-white p-2.5 sm:p-3 text-center md:text-right flex-1 md:border-l-2 md:border-black font-bold text-[10px] sm:text-xs uppercase tracking-wide flex flex-col justify-center">
-          <div>ESPECIFICACIONES TECNICAS DE TELA - TEJIDO PLANO / PUNTO</div>
-          <div className="text-[9px] sm:text-[10px] font-normal text-slate-300">TECHNICAL DATA SHEET FABRIC - WOVEN/KNIT</div>
+        <div className="bg-black text-white p-2 sm:p-2.5 text-center md:text-right flex-1 md:border-l-2 md:border-black font-bold text-[10px] sm:text-[11px] uppercase tracking-wide flex flex-col justify-center leading-tight">
+          <div>ESPECIFICACIONES TECNICAS DE TELA - TEJIDO PLANO / PUNTO/ TECHNICAL DATA SHEET</div>
+          <div>FABRIC - WOVEN/KNIT</div>
         </div>
       </div>
 
       {/* TABLA 1: DATOS GENERALES */}
-      <table className="w-full border-collapse border border-black mb-2 text-[10px] sm:text-[10.5px]">
+      <table className="w-full border-collapse border border-black mb-0 text-[10px] sm:text-[10.5px]">
         <tbody>
           <tr className="border-b border-black">
-            <td className="p-1 font-bold border-r border-black w-[40%] bg-slate-100">
+            <td className="p-1 font-bold border-r border-black w-[40%] bg-[#D9D9D9] text-black">
               FECHA PRODUCCION DE LA TELA / BULK DATE
             </td>
-            <td className="p-1 font-bold text-center border-r border-black w-[20%]">
-              {renderCellInput('fechaBulk', data.fechaBulk, 'text-center')}
+            <td className="p-1 font-bold text-center border-r border-black w-[20%] bg-white text-black">
+              {renderCellInput('fechaBulk', data.fechaBulk, 'text-center font-bold')}
             </td>
-            <td className="p-1 font-bold border-r border-black text-center w-[20%] bg-slate-100">
+            <td className="p-1 font-bold border-r border-black text-center w-[18%] bg-[#D9D9D9] text-black">
               STF P.O #
             </td>
-            <td className="p-1 font-bold text-center w-[20%]">
-              {renderCellInput('stfPo', data.stfPo, 'text-center')}
+            <td className="p-1 font-bold text-center w-[22%] bg-white text-black">
+              {renderCellInput('stfPo', data.stfPo, 'text-center font-bold')}
             </td>
           </tr>
           <tr className="border-b border-black">
-            <td className="p-1 font-bold border-r border-black bg-slate-100">
-              NOMBRE DEL PROVEEDOR / SUPPLIER'S NAME:
+            <td className="p-1 font-bold border-r border-black bg-[#D9D9D9] text-black">
+              NOMBRE DEL PROVEEDOR / SUPPLIER´S NAME:
             </td>
-            <td colSpan={3} className="p-1 font-bold">
-              {renderCellInput('proveedorNombre', data.proveedorNombre)}
+            <td colSpan={3} className="p-1 font-bold text-center bg-white text-black">
+              {renderCellInput('proveedorNombre', data.proveedorNombre, 'text-center font-bold')}
             </td>
           </tr>
           <tr className="border-b border-black">
-            <td className="p-1 font-bold border-r border-black bg-slate-100">
-              NOMBRE DE TELA / STF GROUP REFERENCE:
+            <td className="p-1 font-bold border-r border-black bg-[#D9D9D9] text-black">
+              NOMBRE DE TELA / STF GROUP REFERENCE
             </td>
-            <td className="p-1 font-bold border-r border-black">
-              {renderCellInput('stfRef', data.stfRef)}
+            <td className="p-1 font-bold text-center border-r border-black bg-white text-black">
+              {renderCellInput('stfRef', data.stfRef, 'text-center font-bold')}
             </td>
-            <td className="p-1 font-bold border-r border-black text-center bg-slate-100">
+            <td className="p-1 font-bold border-r border-black text-center bg-[#D9D9D9] text-black">
               COLOR
             </td>
-            <td className="p-1 font-bold text-center">
-              {renderCellInput('color', data.color, 'text-center')}
+            <td className="p-1 font-bold text-center bg-white text-black">
+              {renderCellInput('color', data.color, 'text-center font-bold')}
             </td>
           </tr>
           <tr className="border-b border-black">
-            <td className="p-1 font-bold border-r border-black bg-slate-100">
-              REFERENCIA DE PROVEEDOR / SUPPLIER'S ITEM NUMBER:
+            <td className="p-1 font-bold border-r border-black bg-[#D9D9D9] text-black">
+              REFERENCIA DE PROVEEDOR / SUPPLIER´S ITEM NUMBER:
             </td>
-            <td colSpan={3} className="p-1 font-bold">
-              {renderCellInput('refProv', data.refProv)}
+            <td colSpan={3} className="p-1 font-bold text-center bg-white text-black">
+              {renderCellInput('refProv', data.refProv, 'text-center font-bold')}
             </td>
           </tr>
           <tr className="border-b border-black">
-            <td className="p-1 font-bold border-r border-black bg-slate-100">
+            <td className="p-1 font-bold text-center border-r border-black bg-[#D9D9D9] text-black">
               ORIGEN TELA / FABRIC ORIGIN
             </td>
-            <td className="p-1 font-bold text-center border-r border-black">
-              {renderCellInput('paisOrigen', data.paisOrigen, 'text-center')}
+            <td className="p-1 font-bold text-center border-r border-black bg-white text-black">
+              {renderCellInput('paisOrigen', data.paisOrigen, 'text-center font-bold')}
             </td>
-            <td className="p-1 font-bold border-r border-black text-center bg-slate-100">
+            <td className="p-1 font-bold border-r border-black text-center bg-[#D9D9D9] text-black text-[9.5px]">
               NUMERO DE LOTES / QTY OF LOT
             </td>
-            <td className="p-1 font-bold text-center">
-              {renderCellInput('lotes', data.lotes, 'text-center text-[9.5px]')}
+            <td className="p-1 font-bold text-center bg-white text-black text-[9.5px]">
+              {renderCellInput('lotes', data.lotes, 'text-center text-[9.5px] font-bold')}
             </td>
           </tr>
-          <tr>
-            <td className="p-1 font-bold border-r border-black bg-slate-100">
+          <tr className="border-b border-black">
+            <td className="p-1 font-bold border-r border-black bg-[#D9D9D9] text-black">
               SUBPARTIDA ARANCELARIA (HARMONIZED CODE)
             </td>
-            <td colSpan={3} className="p-1 font-mono font-bold">
-              {renderCellInput('subpartida', data.subpartida, 'font-mono')}
+            <td colSpan={3} className="p-1 font-mono font-bold text-center bg-white text-black">
+              {renderCellInput('subpartida', data.subpartida, 'text-center font-mono')}
             </td>
           </tr>
         </tbody>
       </table>
 
       {/* TABLA 2: CERTIFICADO DE ORIGEN */}
-      <div className="bg-black text-white text-[10px] font-bold text-center py-1 uppercase tracking-wider mb-0 border-x border-t border-black">
+      <div className="bg-black text-white text-[10px] font-bold text-center py-1 uppercase tracking-wider mb-0 border-x border-b border-black">
         INFORMACIÓN SOBRE CERTIFICADO DE ORIGEN / O. C INFORMATION
       </div>
       <table className="w-full border-collapse border border-black mb-2 text-[10px] sm:text-[10.5px]">
         <tbody>
           <tr>
-            <td className="p-1 font-bold border-r border-black w-[45%]">
+            <td className="p-1 font-bold border-r border-black w-[40%] bg-[#D9D9D9] text-black">
               APLICA CERTIFICADO DE ORIGEN COL /MEX. // DOES IT HAVE O.C?
             </td>
-            <td className="p-1 text-center font-bold border-r border-black w-[15%]">
+            <td className="p-1 text-center font-bold border-r border-black w-[8%] bg-[#D9D9D9] text-black">
+              SI/YES
+            </td>
+            <td className="p-1 text-center font-bold border-r border-black w-[8%] bg-white text-black">
               {renderCheckbox(
                 data.aplicaCertOrigen === true,
-                () => handleChange('aplicaCertOrigen', true),
-                'SI/YES'
+                () => handleChange('aplicaCertOrigen', true)
               )}
             </td>
-            <td className="p-1 text-center font-bold border-r border-black w-[15%]">
+            <td className="p-1 text-center font-bold border-r border-black w-[8%] bg-[#D9D9D9] text-black">
+              NO
+            </td>
+            <td className="p-1 text-center font-bold border-r border-black w-[8%] bg-white text-black">
               {renderCheckbox(
                 data.aplicaCertOrigen === false,
-                () => handleChange('aplicaCertOrigen', false),
-                'NO'
+                () => handleChange('aplicaCertOrigen', false)
               )}
             </td>
-            <td className="p-1 text-[8.5px] text-slate-700 leading-tight w-[25%] bg-slate-50">
+            <td className="p-1 text-[8.5px] text-black leading-tight w-[28%] bg-white">
               si aplica SI diligenciar declaracion de origen adjunta. If it does please fill the o.c format
             </td>
           </tr>

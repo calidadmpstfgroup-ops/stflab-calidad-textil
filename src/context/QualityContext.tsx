@@ -56,7 +56,8 @@ import {
   inicializarBaseDatosFichas,
   guardarFichaEnBaseDatos,
   guardarLoteFichasEnBaseDatos,
-  obtenerFichasDeLocalStorage
+  obtenerFichasDeLocalStorage,
+  limpiarBaseDatosFichasCompleta
 } from '../services/fichasDatabaseService';
 
 interface QualityContextType {
@@ -171,6 +172,7 @@ interface QualityContextType {
   guardarFichaTecnica: (ficha: FichaTecnicaHistoricaVersionada) => void;
   guardarFichaTecnicaProveedor: (ficha: FichaTecnicaHistoricaVersionada, nuevaVersion?: VersionFichaTecnica) => void;
   importarFichasTecnicasExcel: (fichas: FichaTecnicaHistoricaVersionada[]) => void;
+  limpiarBaseDatosFichas: () => Promise<void>;
 
   // 🧑‍🔬 Módulo de Usuarios de Laboratorio & Trazabilidad (4 Responsables)
   analistas: AnalistaLaboratorio[];
@@ -630,6 +632,11 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
   const importarFichasTecnicasExcel = (fichasNuevas: FichaTecnicaHistoricaVersionada[]) => {
     guardarLoteFichasEnBaseDatos(fichasNuevas).catch(err => console.warn('Aviso guardando lote en BD:', err));
     setFichasTecnicasHistorial((prev) => [...fichasNuevas, ...prev]);
+  };
+
+  const limpiarBaseDatosFichas = async () => {
+    const limpias = await limpiarBaseDatosFichasCompleta();
+    setFichasTecnicasHistorial(limpias);
   };
 
   // Filtrado de muestras
@@ -1822,6 +1829,7 @@ export const QualityProvider: React.FC<{ children: ReactNode }> = ({ children })
         guardarFichaTecnica,
         guardarFichaTecnicaProveedor,
         importarFichasTecnicasExcel,
+        limpiarBaseDatosFichas,
         notificacionesActivas,
         dispararNotificacion,
         eliminarNotificacion,

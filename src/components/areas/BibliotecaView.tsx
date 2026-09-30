@@ -11,7 +11,9 @@ import {
   CheckCircle,
   Eye,
   ChevronDown,
-  Printer
+  Printer,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { ExploradorFichasModal } from '../fichas-tecnicas/ExploradorFichasModal';
 import { exportarFichaAWord, exportarFichaAPDF } from '../../utils/fichaTecnicaFormatters';
@@ -23,7 +25,7 @@ import {
 } from '../fichas-tecnicas/STFGroupDocumentSheet';
 
 export const BibliotecaView: React.FC = () => {
-  const { fichasTecnicasHistorial, guardarFichaTecnicaProveedor } = useQuality();
+  const { fichasTecnicasHistorial, guardarFichaTecnicaProveedor, limpiarBaseDatosFichas } = useQuality();
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedFichaId, setSelectedFichaId] = useState<string>('');
@@ -32,6 +34,18 @@ export const BibliotecaView: React.FC = () => {
   const [isModalExploradorOpen, setIsModalExploradorOpen] = useState<boolean>(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleLimpiarBaseDatos = async () => {
+    const confirmar = window.confirm(
+      '¿Confirmas que deseas limpiar la base de datos de la Biblioteca Técnica?\n\n' +
+      'Esta acción eliminará cualquier registro antiguo o simulado y restablecerá la base de datos con la Ficha Técnica Oficial auténtica de STF GROUP (CREPE VICTORIA / TEXTIVISION).'
+    );
+    if (!confirmar) return;
+
+    await limpiarBaseDatosFichas();
+    setSelectedFichaId('ft-hist-001');
+    triggerToast('Base de datos de Fichas Técnicas limpiada con éxito.');
+  };
 
   // Cerrar menú de exportación al hacer clic afuera
   useEffect(() => {
@@ -188,6 +202,16 @@ export const BibliotecaView: React.FC = () => {
           >
             <BookOpen className="h-4 w-4 text-white" />
             <span className="text-white">Explorador Base FT</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLimpiarBaseDatos}
+            className="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 px-3.5 py-2 rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
+            title="Limpiar base de datos y purgar datos no oficiales"
+          >
+            <Trash2 className="h-4 w-4 text-rose-400" />
+            <span>Limpiar Base de Datos</span>
           </button>
         </div>
       </div>

@@ -20,8 +20,8 @@ import { COLECCIONES } from './firestoreService';
 const DB_NAME = 'STFLAB_FICHAS_DATABASE';
 const DB_VERSION = 1;
 const STORE_NAME = 'fichas_tecnicas';
-const LOCAL_STORAGE_KEY = 'stflab_fichas_clean_v6';
-const LOCAL_BACKUP_KEY = 'stflab_fichas_backup_v2';
+const LOCAL_STORAGE_KEY = 'stflab_fichas_oficial_v8';
+const LOCAL_BACKUP_KEY = 'stflab_fichas_backup_v8';
 
 // =========================================================================
 // --- 1. GESTOR DE INDEXEDDB                                            ---
@@ -208,29 +208,93 @@ export const obtenerFichasDeLocalStorage = (): FichaTecnicaHistoricaVersionada[]
 };
 
 /**
+ * Limpia completamente la base de datos de Fichas Técnicas del Fabricante,
+ * purgando cualquier dato anterior, simulado o ficticio, y restableciendo
+ * de forma limpia la ficha técnica oficial auténtica de CREPE VICTORIA (TEXTIVISION).
+ */
+export const limpiarBaseDatosFichasCompleta = async (): Promise<FichaTecnicaHistoricaVersionada[]> => {
+  // 1. Limpiar IndexedDB completamente
+  try {
+    const dbInstance = await abrirIndexedDB();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = dbInstance.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const clearReq = store.clear();
+      clearReq.onsuccess = () => resolve();
+      clearReq.onerror = () => reject(clearReq.error);
+    });
+  } catch (err) {
+    console.warn('[FichasDB] Error vaciando IndexedDB:', err);
+  }
+
+  // 2. Limpiar todas las claves viejas de LocalStorage
+  if (typeof window !== 'undefined') {
+    const clavesViejas = [
+      'stflab_fichas_clean_v6',
+      'stflab_fichas_clean_v5',
+      'stflab_fichas_backup_v2',
+      'stflab_fichas_backup_v1',
+      'stflab_fichas_v5',
+      'stflab_fichas_db',
+      'stflab_fichas_versionadas_v1'
+    ];
+    clavesViejas.forEach(k => {
+      try { localStorage.removeItem(k); } catch (_) {}
+    });
+  }
+
+  // 3. Sembrar únicamente la ficha técnica auténtica oficial
+  const fichaLimpiaOficial = [...MOCK_FICHAS_TECNICAS_HISTORICAS];
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fichaLimpiaOficial));
+    localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(fichaLimpiaOficial));
+    await guardarLoteFichasEnBaseDatos(fichaLimpiaOficial);
+  } catch (e) {
+    console.warn('[FichasDB] Error guardando estado limpio:', e);
+  }
+
+  return fichaLimpiaOficial;
+};
+
+// Filtro de depuración para eliminar datos ficticios previos
+function esFichaFicticia(f: FichaTecnicaHistoricaVersionada): boolean {
+  if (!f) return true;
+  const prov = (f.proveedor || '').toUpperCase();
+  const ref = (f.referencia || '').toUpperCase();
+  return (
+    prov.includes('SHANGHAI JOY') ||
+    prov.includes('COLTEJER') ||
+    prov.includes('XYZ TEXTILES') ||
+    ref.includes('LINO MOURA') ||
+    ref.includes('DENIM STRETCH')
+  );
+}
+
+/**
  * Inicializador maestro: Carga desde IndexedDB, LocalStorage, Firestore y Seed Inicial
  * garantizando persistencia absoluta sin importar refrescos de página.
  */
 export const inicializarBaseDatosFichas = async (): Promise<FichaTecnicaHistoricaVersionada[]> => {
   const mapa = new Map<string, FichaTecnicaHistoricaVersionada>();
 
-  // 1. Semilla base oficial inicial (para tener catálogo siempre disponible)
+  // 1. Semilla base oficial inicial (Únicamente fichas oficiales auténticas)
   (MOCK_FICHAS_TECNICAS_HISTORICAS || []).forEach(f => {
     if (f && f.id) mapa.set(f.id, f);
   });
 
-  // 2. Cargar LocalStorage
+  // 2. Cargar LocalStorage (filtrando registros viejos o simulados)
   const locales = obtenerFichasDeLocalStorage();
   locales.forEach(f => {
-    if (f && f.id) mapa.set(f.id, f);
+    if (f && f.id && !esFichaFicticia(f)) {
+      mapa.set(f.id, f);
+    }
   });
 
-  // 3. Cargar IndexedDB (máxima autoridad local)
+  // 3. Cargar IndexedDB (máxima autoridad local, filtrando fichas simuladas)
   try {
     const desdeIDB = await cargarFichasDesdeIndexedDB();
     desdeIDB.forEach(f => {
-      if (f && f.id) {
-        // Si es la ficha histórica de CREPE VICTORIA pero contenía datos obsoletos o inventados, mantener la oficial
+      if (f && f.id && !esFichaFicticia(f)) {
         if (f.referencia === 'CREPE VICTORIA' && f.proveedor?.includes('XYZ')) {
           mapa.set(f.id, MOCK_FICHAS_TECNICAS_HISTORICAS[0]);
         } else {
@@ -249,7 +313,7 @@ export const inicializarBaseDatosFichas = async (): Promise<FichaTecnicaHistoric
       const snap = await getDocs(colRef);
       snap.docs.forEach(docSnap => {
         const data = docSnap.data() as FichaTecnicaHistoricaVersionada;
-        if (data && data.id) {
+        if (data && data.id && !esFichaFicticia(data)) {
           mapa.set(data.id, data);
         }
       });
@@ -260,7 +324,7 @@ export const inicializarBaseDatosFichas = async (): Promise<FichaTecnicaHistoric
 
   const listadoFinal = Array.from(mapa.values());
 
-  // Asegurar que tanto IndexedDB como LocalStorage queden actualizados con la verdad unificada
+  // Asegurar que tanto IndexedDB como LocalStorage queden actualizados con la verdad unificada limpia
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(listadoFinal));
     localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(listadoFinal));
